@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:tc:mysql:8.0:///stayhost
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+  flyway:
+    enabled: false
