@@ -91,7 +91,7 @@ jemini-stayhost/
 └── README.md
 ```
 
-## 일정 (마감: 4/2 수 23:59)
+## 일정
 
 | Day | 날짜 | 요일 | 작업 |
 |-----|------|------|------|
@@ -99,8 +99,6 @@ jemini-stayhost/
 | 3 | 3/29 | 토 | 프로젝트 셋업 + Extranet API + Customer API |
 | 4 | 3/30 | 일 | 동시성(CAS+비관적 락) + Supplier 동기화 + API 마무리 |
 | 5 | 3/31 | 월 | 테스트 + Channel/Supplier Mock + 시딩 + Swagger + README |
-| 버퍼 | 4/1 | 화 | 최종 점검 + 보완 |
-| 제출 | 4/2 | 수 | 23:59 마감 |
 
 ## 구현 스텝 (순서대로)
 
