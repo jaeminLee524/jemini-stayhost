@@ -91,23 +91,79 @@ jemini-stayhost/
 └── README.md
 ```
 
-## 현재 진행 상태
-- [x] Day 1-2: 설계 문서 20개 작성 + 리뷰/보강 완료
-- [x] GitHub 저장소 생성 (jaeminLee524/jemini-stayhost)
-- [x] 과정 기록서 / AI 활용 기록 작성
-- [x] 초기 커밋 + push
-- [ ] Day 3: Spring Boot 프로젝트 셋업 + Entity + Docker Compose
-- [ ] Day 4: Extranet API
-- [ ] Day 5: Customer API + 검색 + 캐시
-- [ ] Day 6: 예약/취소 + 동시성 + Testcontainers 테스트
-- [ ] Day 7: Channel/Supplier 인터페이스 + k6 + 마무리
+## 일정 (마감: 4/2 수 23:59)
+
+| Day | 날짜 | 요일 | 작업 |
+|-----|------|------|------|
+| 1-2 | 3/28-29 | 금토 | 설계 문서 20개 + 리뷰/보강 (완료) |
+| 3 | 3/29 | 토 | 프로젝트 셋업 + Extranet API + Customer API |
+| 4 | 3/30 | 일 | 동시성(CAS+비관적 락) + Supplier 동기화 + API 마무리 |
+| 5 | 3/31 | 월 | 테스트 + Channel/Supplier Mock + 시딩 + Swagger + README |
+| 버퍼 | 4/1 | 화 | 최종 점검 + 보완 |
+| 제출 | 4/2 | 수 | 23:59 마감 |
+
+## 구현 스텝 (순서대로)
+
+Day 3 — 프로젝트 셋업 + API 구현:
+1. 공통: ApiBaseResponse, ResultType, ErrorMessage
+2. 공통: ErrorCode enum, BusinessException, NotFoundException, Auth 예외
+3. 공통: ApiControllerAdvice
+4. 공통: JWT (JwtProvider, JwtAuthenticationFilter, JwtPrincipal, SecurityConfig)
+5. 공통: 래퍼 타입 (UserId, PartnerId) + ArgumentResolver
+6. 공통: MdcLoggingFilter, AOP 요청/응답 로깅
+7. Entity 전체 (Partner, Property, PropertyImage, RoomType, Rate, Inventory, User, Reservation, ReservationDailyRate)
+8. Flyway DDL: V1__init.sql
+9. Docker Compose 기동 확인
+10. Extranet: 파트너 등록/로그인
+11. Extranet: 숙소 CRUD + 상태 변경
+12. Extranet: 객실 유형 CRUD
+13. Extranet: 요금 bulk 설정/조회
+14. Extranet: 재고 bulk 설정/조회
+15. Extranet: 예약 목록 조회
+16. Customer: 회원가입/로그인
+17. Customer: 숙소 검색 (지역/이름, 페이징)
+18. Customer: 숙소 상세 + 요금 조회
+19. Customer: 예약 생성 (기본)
+20. Customer: 예약 취소
+21. Customer: 내 예약 목록/상세
+
+Day 4 — 동시성 + Supplier + 마무리:
+22. Caffeine 캐시 설정 (property, roomType, rate)
+23. 캐시 무효화 이벤트 (@TransactionalEventListener)
+24. InventoryCache (Caffeine CAS, @PostConstruct 워밍업)
+25. 예약 생성에 Caffeine CAS 1차 필터링
+26. 예약 생성에 DB 비관적 락 (SELECT FOR UPDATE)
+27. 예약 취소에 WHERE status='CONFIRMED' + affected rows
+28. TOCTOU 방어적 재검증
+29. DB 커넥션 풀 분리 (AbstractRoutingDataSource)
+30. Supplier: SupplierAdapter + MockSupplierAdapter
+31. Supplier: 수동 동기화 API → property 테이블 저장
+32. 통합 검색에 Supplier 상품 노출 확인
+33. 전체 API Swagger 확인
+
+Day 5 — 테스트 + 마무리:
+34. Testcontainers 동시성 테스트 (100:1, 50:10)
+35. Channel: ChannelAdapter + MockChannelAdapter + CompletableFuture 병렬
+36. 이벤트 연결: ReservationCreatedEvent → ChannelManager
+37. k6 부하 테스트 스크립트
+38. Flyway 시딩 데이터
+39. Swagger Docs 인터페이스 분리 (GroupedOpenApi)
+40. README.md 최종
+41. 코드 정리
+42. journal/ai-usage 최종 갱신
+
+## 코드 수정 후 검증 (매번 필수)
+1. `./gradlew compileJava` — 컴파일 확인
+2. `./gradlew test` — 테스트 통과
+3. `docker compose up` — MySQL + 앱 기동 확인
+4. 검증 통과 후 commit + push
 
 ## 주의사항
 - 코드/문서에 "여기어때", "채용 과제" 포함 금지
 - frontend 디렉토리는 최저 우선순위, 삭제해도 나머지에 영향 없도록 설계
 - docker-compose에서 frontend는 profile로만 존재
 - 문서 추가/변경 시 README.md, journal, ai-usage도 함께 갱신할 것
-- bold(**) 사용 금지 — IntelliJ 마크다운에서 한글 앞뒤 렌더링 안 됨
+- bold 마크다운 사용 금지 — IntelliJ에서 한글 앞뒤 렌더링 안 됨
 
 ## 커밋 규칙
 Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
