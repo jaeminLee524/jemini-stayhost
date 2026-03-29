@@ -1,5 +1,6 @@
 package com.jemini.stayhost.search.application.service;
 
+import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.common.exception.NotFoundException;
 import com.jemini.stayhost.common.response.PageResult;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SearchService {
+
+    private static final int MAX_DATE_RANGE_DAYS = 30;
 
     private final EntityManager entityManager;
 
@@ -65,6 +69,7 @@ public class SearchService {
         final LocalDate startDate,
         final LocalDate endDate
     ) {
+        validateDateRange(startDate, endDate);
         findActiveProperty(propertyId);
         final List<RoomType> roomTypes = findActiveRoomTypes(propertyId);
         final List<Long> roomTypeIds = roomTypes.stream().map(RoomType::getId).toList();
@@ -73,6 +78,18 @@ public class SearchService {
         final Map<Long, List<Inventory>> inventoryByRoomType = loadInventories(roomTypeIds, startDate, endDate);
 
         return buildRateResult(propertyId, roomTypes, ratesByRoomType, inventoryByRoomType, startDate, endDate);
+    }
+
+    // -- getRoomTypeRates private methods --
+
+    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        final long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (days > MAX_DATE_RANGE_DAYS) {
+            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
+        }
     }
 
     // -- searchProperties private methods --

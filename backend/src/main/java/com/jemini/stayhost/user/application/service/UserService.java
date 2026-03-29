@@ -50,6 +50,7 @@ public class UserService {
         final User user = userReader.getByEmail(command.email());
 
         validatePassword(command.password(), user.getPassword());
+        user.validateActive();
 
         return buildLoginResult(user);
     }
