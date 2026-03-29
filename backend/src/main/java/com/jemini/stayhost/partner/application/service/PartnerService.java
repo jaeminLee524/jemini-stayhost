@@ -17,6 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PartnerService {
 
+    private static final String ROLE_PARTNER = "PARTNER";
+    private static final String CONTEXT_PARTNER = "PARTNER";
+    private static final long SECONDS_DIVISOR = 1000;
+
     private final PartnerReader partnerReader;
     private final PartnerManager partnerManager;
     private final PasswordEncoder passwordEncoder;
@@ -99,11 +103,11 @@ public class PartnerService {
     }
 
     private PartnerLoginResult createLoginResult(final Partner partner) {
-        final String token = jwtProvider.generateToken(partner.getId(), "PARTNER", "PARTNER");
+        final String token = jwtProvider.generateToken(partner.getId(), ROLE_PARTNER, CONTEXT_PARTNER);
 
         return PartnerLoginResult.create(
             token,
-            jwtProvider.getExpiration() / 1000,
+            jwtProvider.getExpiration() / SECONDS_DIVISOR,
             partner.getId(),
             partner.getBusinessName(),
             partner.getStatus().name()
