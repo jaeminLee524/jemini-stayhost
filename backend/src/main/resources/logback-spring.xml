@@ -1,10 +1,15 @@
 <configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <!-- 로컬/테스트: 가독성 위주의 패턴 -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%green(%d{yyyy-MM-dd HH:mm:ss.SSS}) %highlight(%-5level) %cyan(${PID:- }) - [%X{traceId}] [%X{userId}] - %yellow([%t] %-40.40logger{39}) : %m%n"/>
+
+    <!-- 로컬/테스트: 컬러 + 가독성 위주 -->
     <springProfile name="default,local,test">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
-                <pattern>%d{HH:mm:ss.SSS} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n</pattern>
+                <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+                <charset>UTF-8</charset>
             </encoder>
         </appender>
         <root level="DEBUG">

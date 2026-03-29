@@ -52,7 +52,16 @@ public class SwaggerConfig {
     public GroupedOpenApi customerApi() {
         return GroupedOpenApi.builder()
                 .group("2-customer")
-                .pathsToMatch("/api/public/**", "/api/users/**", "/api/reservations/**")
+                .pathsToMatch("/api/public/users/**", "/api/public/search/**", "/api/public/properties/**",
+                        "/api/users/**", "/api/reservations/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi commonApi() {
+        return GroupedOpenApi.builder()
+                .group("3-common")
+                .pathsToMatch("/api/public/health", "/actuator/**")
                 .build();
     }
 }

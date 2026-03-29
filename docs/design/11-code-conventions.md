@@ -646,7 +646,7 @@ chore: Testcontainers MySQL 의존성 추가
 
 ### 기본 원칙
 
-- Google Java Style Guide를 기반으로 하되, 들여쓰기는 4 스페이스를 사용한다. (intellij-java-google-style.xml 참고)
+- Google Java Style Guide를 기반으로 하며, 들여쓰기는 2 스페이스를 사용한다. (intellij-java-google-style.xml 참고)
 - 한 줄에 충분히 들어가는 코드는 불필요하게 줄바꿈하지 않는다 (Google Style 200자 기준)
 - `final` 변수를 선호한다. 메서드 파라미터, 지역 변수에 가능한 한 `final`을 붙인다. 재할당이 필요하지 않음을 명시적으로 표현한다.
 
