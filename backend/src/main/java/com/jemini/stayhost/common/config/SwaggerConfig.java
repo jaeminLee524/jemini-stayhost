@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Profile;
 
 import java.util.List;
 
-@Profile("local")
+@Profile({"local", "dev"})
 @Configuration
 public class SwaggerConfig {
 
@@ -20,12 +20,24 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .components(new Components()
-                        .addSecuritySchemes("Bearer", new SecurityScheme()
+                        .addSecuritySchemes("Bearer-Partner", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
-                                .bearerFormat("JWT")))
-                .security(List.of(new SecurityRequirement().addList("Bearer")))
-                .info(new Info().title("StayHost API").version("v1"));
+                                .bearerFormat("JWT")
+                                .description("파트너(Extranet) JWT 토큰"))
+                        .addSecuritySchemes("Bearer-User", new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("고객(Customer) JWT 토큰")))
+                .security(List.of(
+                        new SecurityRequirement().addList("Bearer-Partner"),
+                        new SecurityRequirement().addList("Bearer-User")
+                ))
+                .info(new Info()
+                        .title("StayHost API")
+                        .version("v1")
+                        .description("OTA 숙박 플랫폼 API. Extranet(파트너)과 Customer(고객) 토큰을 구분하여 사용합니다."));
     }
 
     @Bean

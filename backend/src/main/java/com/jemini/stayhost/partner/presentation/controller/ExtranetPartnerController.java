@@ -5,6 +5,7 @@ import com.jemini.stayhost.common.security.PartnerId;
 import com.jemini.stayhost.partner.application.dto.PartnerResult;
 import com.jemini.stayhost.partner.application.service.PartnerService;
 import com.jemini.stayhost.partner.presentation.dto.*;
+import com.jemini.stayhost.partner.presentation.docs.ExtranetPartnerDocs;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-public class ExtranetPartnerController {
+public class ExtranetPartnerController implements ExtranetPartnerDocs {
 
     private final PartnerService partnerService;
 

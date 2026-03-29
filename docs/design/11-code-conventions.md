@@ -456,15 +456,19 @@ public record ErrorMessage(String code, String message) {
 ```
 
 ```java
-// 페이지네이션 응답
-public record PageResponse<T>(
+// 페이지네이션 응답 (common/response/PageResult.java)
+// Service에서 Page -> PageResult 변환 후 반환. Controller에 Page 객체를 내리지 않는다.
+public record PageResult<T>(
         List<T> content,
         int page,
         int size,
         long totalElements,
         int totalPages,
         boolean hasNext
-) { }
+) {
+    public static <T> PageResult<T> from(Page<T> page) { ... }
+    public <R> PageResult<R> map(Function<T, R> mapper) { ... }
+}
 ```
 
 응답 예시:

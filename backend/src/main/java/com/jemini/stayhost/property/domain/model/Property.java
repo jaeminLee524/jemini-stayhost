@@ -84,9 +84,18 @@ public class Property extends BaseEntity {
         return property;
     }
 
-    public void update(final String name, final String description) {
+    public void update(
+            final String name,
+            final String description,
+            final java.time.LocalTime checkInTime,
+            final java.time.LocalTime checkOutTime,
+            final String thumbnailUrl
+    ) {
         this.name = name;
         this.description = description;
+        this.checkInTime = checkInTime;
+        this.checkOutTime = checkOutTime;
+        this.thumbnailUrl = thumbnailUrl;
     }
 
     public void changeStatus(final PropertyStatus status) {
