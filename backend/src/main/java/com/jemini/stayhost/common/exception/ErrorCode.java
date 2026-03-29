@@ -14,6 +14,7 @@ public enum ErrorCode {
   // Inventory
   INVENTORY_NOT_AVAILABLE("해당 날짜에 재고 정보가 없습니다."),
   INVENTORY_INSUFFICIENT("선택한 날짜에 객실이 매진되었습니다."),
+  INVENTORY_TOTAL_BELOW_RESERVED("설정하려는 재고 수가 현재 예약 건수보다 적습니다."),
 
   // Reservation
   RESERVATION_NOT_FOUND("예약을 찾을 수 없습니다."),

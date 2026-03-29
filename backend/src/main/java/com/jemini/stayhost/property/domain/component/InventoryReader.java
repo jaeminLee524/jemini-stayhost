@@ -1,0 +1,11 @@
+package com.jemini.stayhost.property.domain.component;
+
+import com.jemini.stayhost.property.domain.model.Inventory;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface InventoryReader {
+
+  List<Inventory> findByRoomTypeIdAndDateBetween(Long roomTypeId, LocalDate startDate, LocalDate endDate);
+}
