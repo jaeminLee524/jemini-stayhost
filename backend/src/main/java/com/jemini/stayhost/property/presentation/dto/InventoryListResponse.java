@@ -10,17 +10,19 @@ import java.util.List;
 public record InventoryListResponse(Long roomTypeId, List<InventoryEntry> inventory) {
 
     @Builder
-    public record InventoryEntry(LocalDate date, int totalCount, int reservedCount, int availableCount) {}
+    public record InventoryEntry(LocalDate date, int totalCount, int reservedCount, int availableCount) {
+
+    }
 
     public static InventoryListResponse from(final InventoryListResult result) {
         return InventoryListResponse.builder()
-                .roomTypeId(result.roomTypeId())
-                .inventory(result.inventory().stream().map(e -> InventoryEntry.builder()
-                        .date(e.date())
-                        .totalCount(e.totalCount())
-                        .reservedCount(e.reservedCount())
-                        .availableCount(e.availableCount())
-                        .build()).toList())
-                .build();
+            .roomTypeId(result.roomTypeId())
+            .inventory(result.inventory().stream().map(e -> InventoryEntry.builder()
+                .date(e.date())
+                .totalCount(e.totalCount())
+                .reservedCount(e.reservedCount())
+                .availableCount(e.availableCount())
+                .build()).toList())
+            .build();
     }
 }

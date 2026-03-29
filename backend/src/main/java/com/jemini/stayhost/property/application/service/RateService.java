@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,6 +26,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RateService {
+
+    private static final int MAX_DATE_RANGE_DAYS = 30;
 
     private final RoomTypeReader roomTypeReader;
     private final PropertyReader propertyReader;
@@ -60,6 +63,7 @@ public class RateService {
             final LocalDate endDate
     ) {
         validateOwnership(roomTypeId, partnerId);
+        validateDateRange(startDate, endDate);
 
         final List<Rate> rates = rateReader.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
 
@@ -75,6 +79,10 @@ public class RateService {
     private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
             throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        final long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (days > MAX_DATE_RANGE_DAYS) {
+            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
         }
     }
 
