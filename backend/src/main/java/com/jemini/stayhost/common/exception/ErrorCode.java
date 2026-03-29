@@ -32,7 +32,8 @@ public enum ErrorCode {
     INVALID_CREDENTIALS("이메일 또는 비밀번호가 올바르지 않습니다."),
 
     // Validation
-    INVALID_DATE_RANGE("체크인 날짜는 체크아웃 날짜보다 이전이어야 합니다."),
+    INVALID_DATE_RANGE("시작일은 종료일보다 이전이어야 합니다."),
+    DATE_RANGE_TOO_LONG("날짜 범위는 최대 30일까지만 가능합니다."),
     INVALID_GUEST_COUNT("유효하지 않은 인원 수입니다."),
     VALIDATION_ERROR("요청 파라미터가 유효하지 않습니다."),
 

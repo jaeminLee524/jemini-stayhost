@@ -11,7 +11,6 @@ import com.jemini.stayhost.property.presentation.dto.InventoryBulkSetResponse;
 import com.jemini.stayhost.property.presentation.dto.InventoryListResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -37,8 +36,8 @@ public class ExtranetInventoryController implements ExtranetInventoryDocs {
     public ApiBaseResponse<InventoryListResponse> getInventory(
         @PathVariable final Long id,
         final PartnerId partnerId,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate startDate,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate endDate
+        @RequestParam final LocalDate startDate,
+        @RequestParam final LocalDate endDate
     ) {
         InventoryListResult results = inventoryService.getInventory(id, partnerId.value(), startDate, endDate);
 

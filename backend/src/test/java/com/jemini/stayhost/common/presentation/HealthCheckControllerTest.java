@@ -17,8 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(HealthCheckController.class)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class,
-    JwtAuthenticationEntryPoint.class, CustomAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtAuthenticationEntryPoint.class, CustomAccessDeniedHandler.class})
 class HealthCheckControllerTest {
 
   @Autowired
