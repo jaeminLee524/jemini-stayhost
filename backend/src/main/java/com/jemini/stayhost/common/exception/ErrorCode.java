@@ -23,6 +23,8 @@ public enum ErrorCode {
     // Partner
     PARTNER_NOT_FOUND("파트너를 찾을 수 없습니다."),
     PARTNER_SUSPENDED("정지된 파트너 계정입니다."),
+    DUPLICATE_LOGIN_ID("이미 사용 중인 로그인 아이디입니다."),
+    DUPLICATE_BUSINESS_NUMBER("이미 등록된 사업자번호입니다."),
 
     // User
     USER_NOT_FOUND("사용자를 찾을 수 없습니다."),

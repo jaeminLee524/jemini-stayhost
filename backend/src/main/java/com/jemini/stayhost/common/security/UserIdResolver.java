@@ -26,6 +26,6 @@ public class UserIdResolver implements HandlerMethodArgumentResolver {
         if (auth == null || !(auth.getPrincipal() instanceof JwtPrincipal principal)) {
             return null;
         }
-        return UserId.of(principal.subjectId());
+        return UserId.create(principal.subjectId());
     }
 }

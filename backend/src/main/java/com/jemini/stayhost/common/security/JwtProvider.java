@@ -1,10 +1,11 @@
 package com.jemini.stayhost.common.security;
 
+import com.jemini.stayhost.common.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -15,12 +16,12 @@ import java.util.Date;
 public class JwtProvider {
 
     private final SecretKey secretKey;
+    @Getter
     private final long expiration;
 
-    public JwtProvider(@Value("${jwt.secret}") final String secret,
-                       @Value("${jwt.expiration}") final long expiration) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expiration = expiration;
+    public JwtProvider(final JwtProperties jwtProperties) {
+        this.secretKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
+        this.expiration = jwtProperties.expiration();
     }
 
     public String generateToken(final Long subject, final String role, final String context) {
@@ -38,12 +39,7 @@ public class JwtProvider {
     }
 
     public JwtPrincipal parseToken(final String token) {
-        final Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
+        final Claims claims = parseClaims(token);
         return new JwtPrincipal(
                 Long.parseLong(claims.getSubject()),
                 claims.get("role", String.class),
@@ -53,13 +49,18 @@ public class JwtProvider {
 
     public boolean validateToken(final String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    private Claims parseClaims(final String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

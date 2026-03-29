@@ -26,6 +26,6 @@ public class PartnerIdResolver implements HandlerMethodArgumentResolver {
         if (auth == null || !(auth.getPrincipal() instanceof JwtPrincipal principal)) {
             return null;
         }
-        return PartnerId.of(principal.subjectId());
+        return PartnerId.create(principal.subjectId());
     }
 }

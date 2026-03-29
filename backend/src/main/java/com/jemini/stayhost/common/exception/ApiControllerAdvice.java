@@ -64,7 +64,7 @@ public class ApiControllerAdvice {
 
     private HttpStatus resolveBusinessStatus(final ErrorCode errorCode) {
         return switch (errorCode) {
-            case DUPLICATE_RESERVATION -> HttpStatus.CONFLICT;
+            case DUPLICATE_RESERVATION, DUPLICATE_LOGIN_ID, DUPLICATE_BUSINESS_NUMBER -> HttpStatus.CONFLICT;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

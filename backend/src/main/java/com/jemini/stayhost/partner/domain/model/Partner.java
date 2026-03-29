@@ -77,6 +77,13 @@ public class Partner extends BaseEntity {
         this.status = PartnerStatus.SUSPENDED;
     }
 
+    public void update(final String phone, final String email, final String bankName, final String bankAccount) {
+        this.phone = phone;
+        this.email = email;
+        this.bankName = bankName;
+        this.bankAccount = bankAccount;
+    }
+
     public void validateActive() {
         if (this.status != PartnerStatus.ACTIVE) {
             throw new AuthorizationException("활성 상태가 아닌 파트너입니다.");
