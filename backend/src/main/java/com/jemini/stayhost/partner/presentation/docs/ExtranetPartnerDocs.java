@@ -27,14 +27,18 @@ public interface ExtranetPartnerDocs {
       @ApiResponse(responseCode = "201", description = "파트너 등록 성공"),
       @ApiResponse(responseCode = "409", description = "중복 데이터")
   })
-  ApiBaseResponse<PartnerRegisterResponse> register(@RequestBody @Valid PartnerRegisterRequest request);
+  ApiBaseResponse<PartnerRegisterResponse> register(
+      @RequestBody @Valid PartnerRegisterRequest request
+  );
 
   @Operation(summary = "내 파트너 정보 조회", description = "JWT 토큰 기반으로 내 파트너 정보를 조회한다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "조회 성공"),
       @ApiResponse(responseCode = "404", description = "파트너 없음")
   })
-  ApiBaseResponse<PartnerResponse> getMyPartner(@Parameter(hidden = true) PartnerId partnerId);
+  ApiBaseResponse<PartnerResponse> getMyPartner(
+      @Parameter(hidden = true) PartnerId partnerId
+  );
 
   @Operation(summary = "파트너 정보 수정", description = "연락처, 이메일, 정산 계좌 정보를 수정한다. 사업자번호는 수정 불가.")
   @ApiResponses({

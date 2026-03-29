@@ -27,5 +27,7 @@ public interface ExtranetAuthDocs {
       @ApiResponse(responseCode = "401", description = "인증 실패"),
       @ApiResponse(responseCode = "404", description = "파트너 없음")
   })
-  ApiBaseResponse<PartnerLoginResponse> login(@RequestBody @Valid PartnerLoginRequest request);
+  ApiBaseResponse<PartnerLoginResponse> login(
+      @RequestBody @Valid PartnerLoginRequest request
+  );
 }
