@@ -19,7 +19,9 @@ public class ExtranetPartnerController implements ExtranetPartnerDocs {
 
   @PostMapping("/api/extranet/partners")
   @ResponseStatus(HttpStatus.CREATED)
-  public ApiBaseResponse<PartnerRegisterResponse> register(@RequestBody @Valid final PartnerRegisterRequest request) {
+  public ApiBaseResponse<PartnerRegisterResponse> register(
+      @RequestBody @Valid final PartnerRegisterRequest request
+  ) {
     final PartnerResult result = partnerService.register(request.toCommand());
     return ApiBaseResponse.success(PartnerRegisterResponse.from(result));
   }
