@@ -20,6 +20,11 @@ public record PartnerUpdateRequest(
 ) {
 
   public PartnerUpdateCommand toCommand() {
-    return PartnerUpdateCommand.create(phone, email, bankName, bankAccount);
+    return PartnerUpdateCommand.builder()
+        .phone(this.phone)
+        .email(this.email)
+        .bankName(this.bankName)
+        .bankAccount(this.bankAccount)
+        .build();
   }
 }

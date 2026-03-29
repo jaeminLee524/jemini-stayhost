@@ -35,6 +35,15 @@ public record PropertyCreateRequest(
 ) {
 
   public PropertyCreateCommand toCommand() {
-    return PropertyCreateCommand.create(name, type, description, address, region, checkInTime, checkOutTime, thumbnailUrl);
+    return PropertyCreateCommand.builder()
+        .name(this.name)
+        .type(this.type)
+        .description(this.description)
+        .address(this.address)
+        .region(this.region)
+        .checkInTime(this.checkInTime)
+        .checkOutTime(this.checkOutTime)
+        .thumbnailUrl(this.thumbnailUrl)
+        .build();
   }
 }

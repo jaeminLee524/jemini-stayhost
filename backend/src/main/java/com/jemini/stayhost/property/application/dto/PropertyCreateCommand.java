@@ -14,26 +14,4 @@ public record PropertyCreateCommand(
     LocalTime checkOutTime,
     String thumbnailUrl
 ) {
-
-  public static PropertyCreateCommand create(
-      final String name,
-      final String type,
-      final String description,
-      final String address,
-      final String region,
-      final LocalTime checkInTime,
-      final LocalTime checkOutTime,
-      final String thumbnailUrl
-  ) {
-    return PropertyCreateCommand.builder()
-        .name(name)
-        .type(type)
-        .description(description)
-        .address(address)
-        .region(region)
-        .checkInTime(checkInTime)
-        .checkOutTime(checkOutTime)
-        .thumbnailUrl(thumbnailUrl)
-        .build();
-  }
 }

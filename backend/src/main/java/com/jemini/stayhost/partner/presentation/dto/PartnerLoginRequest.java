@@ -14,6 +14,9 @@ public record PartnerLoginRequest(
 ) {
 
   public PartnerLoginCommand toCommand() {
-    return PartnerLoginCommand.create(loginId, password);
+    return PartnerLoginCommand.builder()
+        .loginId(this.loginId)
+        .password(this.password)
+        .build();
   }
 }

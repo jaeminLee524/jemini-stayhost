@@ -36,9 +36,16 @@ public record PartnerRegisterRequest(
 ) {
 
   public PartnerRegisterCommand toCommand() {
-    return PartnerRegisterCommand.create(
-        businessName, businessNumber, representative,
-        phone, email, bankName, bankAccount, loginId, password
-    );
+    return PartnerRegisterCommand.builder()
+        .businessName(this.businessName)
+        .businessNumber(this.businessNumber)
+        .representative(this.representative)
+        .phone(this.phone)
+        .email(this.email)
+        .bankName(this.bankName)
+        .bankAccount(this.bankAccount)
+        .loginId(this.loginId)
+        .password(this.password)
+        .build();
   }
 }

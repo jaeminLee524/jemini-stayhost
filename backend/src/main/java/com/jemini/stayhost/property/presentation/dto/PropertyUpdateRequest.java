@@ -25,6 +25,12 @@ public record PropertyUpdateRequest(
 ) {
 
   public PropertyUpdateCommand toCommand() {
-    return PropertyUpdateCommand.create(name, description, checkInTime, checkOutTime, thumbnailUrl);
+    return PropertyUpdateCommand.builder()
+        .name(this.name)
+        .description(this.description)
+        .checkInTime(this.checkInTime)
+        .checkOutTime(this.checkOutTime)
+        .thumbnailUrl(this.thumbnailUrl)
+        .build();
   }
 }
