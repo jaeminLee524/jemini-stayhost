@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @Schema(description = "숙소 등록 요청")
@@ -30,20 +31,28 @@ public record PropertyCreateRequest(
     @Schema(description = "체크아웃 시간", example = "11:00")
     LocalTime checkOutTime,
 
+    @Schema(description = "위도", example = "37.4979")
+    BigDecimal latitude,
+
+    @Schema(description = "경도", example = "127.0276")
+    BigDecimal longitude,
+
     @Schema(description = "썸네일 URL", example = "https://cdn.example.com/img/thumb.jpg")
     @Size(max = 500) String thumbnailUrl
 ) {
 
-  public PropertyCreateCommand toCommand() {
-    return PropertyCreateCommand.builder()
-        .name(this.name)
-        .type(this.type)
-        .description(this.description)
-        .address(this.address)
-        .region(this.region)
-        .checkInTime(this.checkInTime)
-        .checkOutTime(this.checkOutTime)
-        .thumbnailUrl(this.thumbnailUrl)
-        .build();
-  }
+    public PropertyCreateCommand toCommand() {
+        return PropertyCreateCommand.builder()
+            .name(this.name)
+            .type(this.type)
+            .description(this.description)
+            .address(this.address)
+            .region(this.region)
+            .checkInTime(this.checkInTime)
+            .checkOutTime(this.checkOutTime)
+            .latitude(this.latitude)
+            .longitude(this.longitude)
+            .thumbnailUrl(this.thumbnailUrl)
+            .build();
+    }
 }

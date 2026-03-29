@@ -66,11 +66,18 @@ public class RoomType extends BaseEntity {
         return roomType;
     }
 
-    public void update(final String name, final String description, final int maxOccupancy, final BigDecimal basePrice) {
+    public void update(
+        final String name,
+        final String description,
+        final int maxOccupancy,
+        final BigDecimal basePrice,
+        final String amenities
+    ) {
         this.name = name;
         this.description = description;
         this.maxOccupancy = maxOccupancy;
         this.basePrice = basePrice;
+        this.amenities = amenities;
     }
 
     public void validateGuestCount(final int guestCount) {

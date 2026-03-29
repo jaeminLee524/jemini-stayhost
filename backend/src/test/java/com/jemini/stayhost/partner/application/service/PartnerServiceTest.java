@@ -120,7 +120,8 @@ class PartnerServiceTest {
     @DisplayName("파트너 로그인 - 비활성 상태 예외")
     void 파트너_로그인_비활성_상태_예외() {
         final Partner partner = Partner.create(
-            "테스트", "123-45-67890", "홍길동", "010-1234-5678", "test@test.com", "testlogin", "encoded");
+            "테스트", "123-45-67890", "홍길동", "010-1234-5678", "test@test.com", "testlogin", "encoded",
+            null, null);
         given(partnerReader.getByLoginId("testlogin")).willReturn(partner);
         given(passwordEncoder.matches("password123", "encoded")).willReturn(true);
 
@@ -155,7 +156,8 @@ class PartnerServiceTest {
 
     private Partner createActivePartner() {
         final Partner partner = Partner.create(
-            "테스트", "123-45-67890", "홍길동", "010-1234-5678", "test@test.com", "testlogin", "encoded");
+            "테스트", "123-45-67890", "홍길동", "010-1234-5678", "test@test.com", "testlogin", "encoded",
+            "국민은행", "123-456");
         partner.activate();
         return partner;
     }

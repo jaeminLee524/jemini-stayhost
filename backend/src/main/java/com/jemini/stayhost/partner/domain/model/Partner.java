@@ -55,7 +55,9 @@ public class Partner extends BaseEntity {
         final String phone,
         final String email,
         final String loginId,
-        final String encodedPassword
+        final String encodedPassword,
+        final String bankName,
+        final String bankAccount
     ) {
         final Partner partner = new Partner();
         partner.businessName = businessName;
@@ -65,6 +67,8 @@ public class Partner extends BaseEntity {
         partner.email = email;
         partner.loginId = loginId;
         partner.password = encodedPassword;
+        partner.bankName = bankName;
+        partner.bankAccount = bankAccount;
         partner.status = PartnerStatus.PENDING;
         return partner;
     }
@@ -77,11 +81,16 @@ public class Partner extends BaseEntity {
         this.status = PartnerStatus.SUSPENDED;
     }
 
-    public void update(final String phone, final String email, final String bankName, final String bankAccount) {
-        this.phone = phone;
-        this.email = email;
-        this.bankName = bankName;
-        this.bankAccount = bankAccount;
+    public void update(
+        final String phone,
+        final String email,
+        final String bankName,
+        final String bankAccount
+    ) {
+        if (phone != null) this.phone = phone;
+        if (email != null) this.email = email;
+        if (bankName != null) this.bankName = bankName;
+        if (bankAccount != null) this.bankAccount = bankAccount;
     }
 
     public void validateActive() {

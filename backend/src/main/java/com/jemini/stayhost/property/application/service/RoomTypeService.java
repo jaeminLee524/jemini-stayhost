@@ -68,7 +68,7 @@ public class RoomTypeService {
         final RoomType roomType = roomTypeReader.getById(roomTypeId);
 
         validateRoomTypeOwner(roomType, partnerId);
-        roomType.update(command.name(), command.description(), command.maxOccupancy(), command.basePrice());
+        roomType.update(command.name(), command.description(), command.maxOccupancy(), command.basePrice(), toJson(command.amenities()));
 
         return RoomTypeResult.from(roomType);
     }
@@ -97,7 +97,7 @@ public class RoomTypeService {
         try {
             return objectMapper.writeValueAsString(amenities);
         } catch (JsonProcessingException e) {
-            return null;
+            throw new IllegalStateException("어메니티 JSON 변환에 실패했습니다.", e);
         }
     }
 }

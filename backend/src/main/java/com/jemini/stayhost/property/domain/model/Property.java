@@ -69,7 +69,10 @@ public class Property extends BaseEntity {
         final String address,
         final String region,
         final LocalTime checkInTime,
-        final LocalTime checkOutTime
+        final LocalTime checkOutTime,
+        final BigDecimal latitude,
+        final BigDecimal longitude,
+        final String thumbnailUrl
     ) {
         final Property property = new Property();
         property.partnerId = partnerId;
@@ -80,6 +83,9 @@ public class Property extends BaseEntity {
         property.region = region;
         property.checkInTime = checkInTime;
         property.checkOutTime = checkOutTime;
+        property.latitude = latitude;
+        property.longitude = longitude;
+        property.thumbnailUrl = thumbnailUrl;
         property.status = PropertyStatus.INACTIVE;
         return property;
     }
@@ -87,15 +93,15 @@ public class Property extends BaseEntity {
     public void update(
         final String name,
         final String description,
-        final java.time.LocalTime checkInTime,
-        final java.time.LocalTime checkOutTime,
+        final LocalTime checkInTime,
+        final LocalTime checkOutTime,
         final String thumbnailUrl
     ) {
-        this.name = name;
-        this.description = description;
-        this.checkInTime = checkInTime;
-        this.checkOutTime = checkOutTime;
-        this.thumbnailUrl = thumbnailUrl;
+        if (name != null) this.name = name;
+        if (description != null) this.description = description;
+        if (checkInTime != null) this.checkInTime = checkInTime;
+        if (checkOutTime != null) this.checkOutTime = checkOutTime;
+        if (thumbnailUrl != null) this.thumbnailUrl = thumbnailUrl;
     }
 
     public void changeStatus(final PropertyStatus status) {

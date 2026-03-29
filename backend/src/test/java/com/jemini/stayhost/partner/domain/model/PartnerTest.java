@@ -83,7 +83,8 @@ class PartnerTest {
     private Partner createPartner() {
         return Partner.create(
             "테스트 숙소", "123-45-67890", "홍길동",
-            "010-1234-5678", "test@test.com", "testlogin", "encodedPassword"
+            "010-1234-5678", "test@test.com", "testlogin", "encodedPassword",
+            null, null
         );
     }
 }

@@ -128,6 +128,6 @@ class PropertyServiceTest {
 
     private Property createProperty(final Long partnerId) {
         return Property.create(partnerId, "테스트 호텔", PropertyType.HOTEL, "설명",
-            "서울시 강남구", "서울", LocalTime.of(15, 0), LocalTime.of(11, 0));
+            "서울시 강남구", "서울", LocalTime.of(15, 0), LocalTime.of(11, 0), null, null, null);
     }
 }

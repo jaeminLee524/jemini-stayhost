@@ -88,7 +88,10 @@ public class PropertyService {
         command.address(),
         command.region(),
         command.checkInTime(),
-        command.checkOutTime()
+        command.checkOutTime(),
+        command.latitude(),
+        command.longitude(),
+        command.thumbnailUrl()
     );
   }
 }

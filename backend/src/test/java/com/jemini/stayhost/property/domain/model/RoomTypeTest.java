@@ -27,7 +27,7 @@ class RoomTypeTest {
     void 객실유형_수정_성공() {
         final RoomType roomType = createRoomType(2);
 
-        roomType.update("디럭스 더블", "업그레이드", 3, BigDecimal.valueOf(200000));
+        roomType.update("디럭스 더블", "업그레이드", 3, BigDecimal.valueOf(200000), null);
 
         assertThat(roomType.getName()).isEqualTo("디럭스 더블");
         assertThat(roomType.getDescription()).isEqualTo("업그레이드");

@@ -86,7 +86,9 @@ public class PartnerService {
             command.phone(),
             command.email(),
             command.loginId(),
-            passwordEncoder.encode(command.password())
+            passwordEncoder.encode(command.password()),
+            command.bankName(),
+            command.bankAccount()
         );
     }
 
