@@ -6,20 +6,20 @@ import jakarta.validation.constraints.Size;
 
 @Schema(description = "파트너 정보 수정 요청")
 public record PartnerUpdateRequest(
-        @Schema(description = "연락처", example = "02-9999-8888")
-        @Size(max = 20) String phone,
+    @Schema(description = "연락처", example = "02-9999-8888")
+    @Size(max = 20) String phone,
 
-        @Schema(description = "이메일", example = "new@stayhost.com")
-        @Size(max = 200) String email,
+    @Schema(description = "이메일", example = "new@stayhost.com")
+    @Size(max = 200) String email,
 
-        @Schema(description = "정산 은행명", example = "신한은행")
-        @Size(max = 50) String bankName,
+    @Schema(description = "정산 은행명", example = "신한은행")
+    @Size(max = 50) String bankName,
 
-        @Schema(description = "정산 계좌번호", example = "987654-32-109876")
-        @Size(max = 50) String bankAccount
+    @Schema(description = "정산 계좌번호", example = "987654-32-109876")
+    @Size(max = 50) String bankAccount
 ) {
 
-    public PartnerUpdateCommand toCommand() {
-        return PartnerUpdateCommand.create(phone, email, bankName, bankAccount);
-    }
+  public PartnerUpdateCommand toCommand() {
+    return PartnerUpdateCommand.create(phone, email, bankName, bankAccount);
+  }
 }

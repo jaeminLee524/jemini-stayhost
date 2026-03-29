@@ -17,17 +17,17 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
-    private final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-    @Override
-    public void handle(final HttpServletRequest request,
-                       final HttpServletResponse response,
-                       final AccessDeniedException accessDeniedException) throws IOException {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
+  @Override
+  public void handle(final HttpServletRequest request,
+             final HttpServletResponse response,
+             final AccessDeniedException accessDeniedException) throws IOException {
+    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.setCharacterEncoding("UTF-8");
 
-        final ApiBaseResponse<?> body = ApiBaseResponse.error(ErrorCode.FORBIDDEN, ErrorCode.FORBIDDEN.getMessage());
-        objectMapper.writeValue(response.getOutputStream(), body);
-    }
+    final ApiBaseResponse<?> body = ApiBaseResponse.error(ErrorCode.FORBIDDEN, ErrorCode.FORBIDDEN.getMessage());
+    objectMapper.writeValue(response.getOutputStream(), body);
+  }
 }

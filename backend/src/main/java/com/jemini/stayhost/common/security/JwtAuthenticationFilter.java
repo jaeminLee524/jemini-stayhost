@@ -19,38 +19,38 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
+  private static final String AUTHORIZATION_HEADER = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer ";
 
-    private final JwtProvider jwtProvider;
+  private final JwtProvider jwtProvider;
 
-    @Override
-    protected void doFilterInternal(final HttpServletRequest request,
-                                    final HttpServletResponse response,
-                                    final FilterChain filterChain) throws ServletException, IOException {
-        final String token = resolveToken(request);
+  @Override
+  protected void doFilterInternal(final HttpServletRequest request,
+                  final HttpServletResponse response,
+                  final FilterChain filterChain) throws ServletException, IOException {
+    final String token = resolveToken(request);
 
-        if (token != null && jwtProvider.validateToken(token)) {
-            final JwtPrincipal principal = jwtProvider.parseToken(token);
-            SecurityContextHolder.getContext().setAuthentication(createAuthentication(principal));
-        }
-
-        filterChain.doFilter(request, response);
+    if (token != null && jwtProvider.validateToken(token)) {
+      final JwtPrincipal principal = jwtProvider.parseToken(token);
+      SecurityContextHolder.getContext().setAuthentication(createAuthentication(principal));
     }
 
-    private UsernamePasswordAuthenticationToken createAuthentication(final JwtPrincipal principal) {
-        return new UsernamePasswordAuthenticationToken(
-            principal,
-            null,
-            List.of(new SimpleGrantedAuthority("ROLE_" + principal.role()))
-        );
-    }
+    filterChain.doFilter(request, response);
+  }
 
-    private String resolveToken(final HttpServletRequest request) {
-        final String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
-        }
-        return null;
+  private UsernamePasswordAuthenticationToken createAuthentication(final JwtPrincipal principal) {
+    return new UsernamePasswordAuthenticationToken(
+      principal,
+      null,
+      List.of(new SimpleGrantedAuthority("ROLE_" + principal.role()))
+    );
+  }
+
+  private String resolveToken(final HttpServletRequest request) {
+    final String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+    if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+      return bearerToken.substring(BEARER_PREFIX.length());
     }
+    return null;
+  }
 }

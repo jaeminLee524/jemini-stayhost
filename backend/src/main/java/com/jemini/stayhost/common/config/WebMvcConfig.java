@@ -13,12 +13,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    private final UserIdResolver userIdResolver;
-    private final PartnerIdResolver partnerIdResolver;
+  private final UserIdResolver userIdResolver;
+  private final PartnerIdResolver partnerIdResolver;
 
-    @Override
-    public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(userIdResolver);
-        resolvers.add(partnerIdResolver);
-    }
+  @Override
+  public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
+    resolvers.add(userIdResolver);
+    resolvers.add(partnerIdResolver);
+  }
 }

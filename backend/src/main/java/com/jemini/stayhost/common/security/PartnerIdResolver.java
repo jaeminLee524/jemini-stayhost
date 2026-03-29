@@ -12,20 +12,20 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 @Component
 public class PartnerIdResolver implements HandlerMethodArgumentResolver {
 
-    @Override
-    public boolean supportsParameter(final MethodParameter parameter) {
-        return PartnerId.class.isAssignableFrom(parameter.getParameterType());
-    }
+  @Override
+  public boolean supportsParameter(final MethodParameter parameter) {
+    return PartnerId.class.isAssignableFrom(parameter.getParameterType());
+  }
 
-    @Override
-    public Object resolveArgument(final MethodParameter parameter,
-                                  final ModelAndViewContainer mavContainer,
-                                  final NativeWebRequest webRequest,
-                                  final WebDataBinderFactory binderFactory) {
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof JwtPrincipal principal)) {
-            return null;
-        }
-        return PartnerId.create(principal.subjectId());
+  @Override
+  public Object resolveArgument(final MethodParameter parameter,
+                  final ModelAndViewContainer mavContainer,
+                  final NativeWebRequest webRequest,
+                  final WebDataBinderFactory binderFactory) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !(auth.getPrincipal() instanceof JwtPrincipal principal)) {
+      return null;
     }
+    return PartnerId.create(principal.subjectId());
+  }
 }

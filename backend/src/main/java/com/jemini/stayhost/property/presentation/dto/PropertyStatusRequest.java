@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 
 @Schema(description = "숙소 상태 변경 요청")
 public record PropertyStatusRequest(
-        @Schema(description = "변경할 상태", example = "ACTIVE")
-        @NotBlank String status
+    @Schema(description = "변경할 상태", example = "ACTIVE")
+    @NotBlank String status
 ) {
 }

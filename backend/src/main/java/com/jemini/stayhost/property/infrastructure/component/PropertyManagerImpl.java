@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PropertyManagerImpl implements PropertyManager {
 
-    private final PropertyRepository propertyRepository;
+  private final PropertyRepository propertyRepository;
 
-    @Override
-    public Property save(final Property property) {
-        return propertyRepository.save(property);
-    }
+  @Override
+  public Property save(final Property property) {
+    return propertyRepository.save(property);
+  }
 }

@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PropertyRepository extends JpaRepository<Property, Long> {
 
-    Page<Property> findByPartnerId(Long partnerId, Pageable pageable);
+  Page<Property> findByPartnerId(Long partnerId, Pageable pageable);
 }

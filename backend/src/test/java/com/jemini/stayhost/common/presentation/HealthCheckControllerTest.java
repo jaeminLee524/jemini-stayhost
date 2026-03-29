@@ -18,29 +18,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(HealthCheckController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class,
-        JwtAuthenticationEntryPoint.class, CustomAccessDeniedHandler.class})
+    JwtAuthenticationEntryPoint.class, CustomAccessDeniedHandler.class})
 class HealthCheckControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired
+  private MockMvc mockMvc;
 
-    @MockitoBean
-    private JwtProvider jwtProvider;
+  @MockitoBean
+  private JwtProvider jwtProvider;
 
-    @Test
-    void healthCheck_returnsSuccess() throws Exception {
-        mockMvc.perform(get("/api/public/health"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result").value("SUCCESS"))
-                .andExpect(jsonPath("$.data").value("OK"))
-                .andExpect(jsonPath("$.error").isEmpty());
-    }
+  @Test
+  void healthCheck_returnsSuccess() throws Exception {
+    mockMvc.perform(get("/api/public/health"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.result").value("SUCCESS"))
+        .andExpect(jsonPath("$.data").value("OK"))
+        .andExpect(jsonPath("$.error").isEmpty());
+  }
 
-    @Test
-    void protectedEndpoint_withoutToken_returns401() throws Exception {
-        mockMvc.perform(get("/api/reservations"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.result").value("ERROR"))
-                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
-    }
+  @Test
+  void protectedEndpoint_withoutToken_returns401() throws Exception {
+    mockMvc.perform(get("/api/reservations"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.result").value("ERROR"))
+        .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+  }
 }

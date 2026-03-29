@@ -13,19 +13,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Tag(name = "Extranet 인증", description = "파트너 로그인 API")
 public interface ExtranetAuthDocs {
 
-    @Operation(summary = "파트너 로그인", description = """
-            로그인 아이디/비밀번호로 인증 후 JWT를 발급한다.
-            ``` json
-            [ERROR_CODE]
-            * PARTNER_NOT_FOUND: 로그인 아이디에 해당하는 파트너 없음
-            * UNAUTHORIZED: 비밀번호 불일치
-            * FORBIDDEN: 활성 상태가 아닌 파트너 (PENDING/SUSPENDED)
-            ```
-            """)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "로그인 성공, JWT 발급"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "404", description = "파트너 없음")
-    })
-    ApiBaseResponse<PartnerLoginResponse> login(@RequestBody @Valid PartnerLoginRequest request);
+  @Operation(summary = "파트너 로그인", description = """
+      로그인 아이디/비밀번호로 인증 후 JWT를 발급한다.
+      ``` json
+      [ERROR_CODE]
+      * PARTNER_NOT_FOUND: 로그인 아이디에 해당하는 파트너 없음
+      * UNAUTHORIZED: 비밀번호 불일치
+      * FORBIDDEN: 활성 상태가 아닌 파트너 (PENDING/SUSPENDED)
+      ```
+      """)
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "로그인 성공, JWT 발급"),
+      @ApiResponse(responseCode = "401", description = "인증 실패"),
+      @ApiResponse(responseCode = "404", description = "파트너 없음")
+  })
+  ApiBaseResponse<PartnerLoginResponse> login(@RequestBody @Valid PartnerLoginRequest request);
 }

@@ -14,16 +14,16 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PropertyReaderImpl implements PropertyReader {
 
-    private final PropertyRepository propertyRepository;
+  private final PropertyRepository propertyRepository;
 
-    @Override
-    public Property getById(final Long id) {
-        return propertyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.PROPERTY_NOT_FOUND));
-    }
+  @Override
+  public Property getById(final Long id) {
+    return propertyRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException(ErrorCode.PROPERTY_NOT_FOUND));
+  }
 
-    @Override
-    public Page<Property> findByPartnerId(final Long partnerId, final Pageable pageable) {
-        return propertyRepository.findByPartnerId(partnerId, pageable);
-    }
+  @Override
+  public Page<Property> findByPartnerId(final Long partnerId, final Pageable pageable) {
+    return propertyRepository.findByPartnerId(partnerId, pageable);
+  }
 }

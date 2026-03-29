@@ -4,5 +4,5 @@ import com.jemini.stayhost.property.domain.model.Property;
 
 public interface PropertyManager {
 
-    Property save(Property property);
+  Property save(Property property);
 }

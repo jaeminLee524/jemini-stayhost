@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class ApiLoggingAop {
 
-    private static final Logger log = LoggerFactory.getLogger(ApiLoggingAop.class);
+  private static final Logger log = LoggerFactory.getLogger(ApiLoggingAop.class);
 
-    @Around("within(com.jemini.stayhost..presentation.controller..*)")
-    public Object logApiCall(final ProceedingJoinPoint joinPoint) throws Throwable {
-        final String method = joinPoint.getSignature().toShortString();
+  @Around("within(com.jemini.stayhost..presentation.controller..*)")
+  public Object logApiCall(final ProceedingJoinPoint joinPoint) throws Throwable {
+    final String method = joinPoint.getSignature().toShortString();
 
-        log.info("[API_REQUEST] {} args={}", method, joinPoint.getArgs());
+    log.info("[API_REQUEST] {} args={}", method, joinPoint.getArgs());
 
-        final Object result = joinPoint.proceed();
+    final Object result = joinPoint.proceed();
 
-        log.info("[API_RESPONSE] {} result={}", method, result);
-        return result;
-    }
+    log.info("[API_RESPONSE] {} result={}", method, result);
+    return result;
+  }
 }

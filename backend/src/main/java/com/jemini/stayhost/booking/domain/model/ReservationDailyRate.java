@@ -15,29 +15,29 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReservationDailyRate extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reservation_id", nullable = false)
-    private Reservation reservation;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "reservation_id", nullable = false)
+  private Reservation reservation;
 
-    @Column(nullable = false)
-    private LocalDate date;
+  @Column(nullable = false)
+  private LocalDate date;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
+  @Column(nullable = false, precision = 12, scale = 2)
+  private BigDecimal price;
 
-    public static ReservationDailyRate create(
-            final Reservation reservation,
-            final LocalDate date,
-            final BigDecimal price
-    ) {
-        final ReservationDailyRate dailyRate = new ReservationDailyRate();
-        dailyRate.reservation = reservation;
-        dailyRate.date = date;
-        dailyRate.price = price;
-        return dailyRate;
-    }
+  public static ReservationDailyRate create(
+      final Reservation reservation,
+      final LocalDate date,
+      final BigDecimal price
+  ) {
+    final ReservationDailyRate dailyRate = new ReservationDailyRate();
+    dailyRate.reservation = reservation;
+    dailyRate.date = date;
+    dailyRate.price = price;
+    return dailyRate;
+  }
 }

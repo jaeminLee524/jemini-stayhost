@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ExtranetAuthController implements ExtranetAuthDocs {
 
-    private final PartnerService partnerService;
+  private final PartnerService partnerService;
 
-    @PostMapping("/api/public/extranet/auth/login")
-    public ApiBaseResponse<PartnerLoginResponse> login(@RequestBody @Valid final PartnerLoginRequest request) {
-        final PartnerLoginResult result = partnerService.login(request.toCommand());
-        return ApiBaseResponse.success(PartnerLoginResponse.from(result));
-    }
+  @PostMapping("/api/public/extranet/auth/login")
+  public ApiBaseResponse<PartnerLoginResponse> login(@RequestBody @Valid final PartnerLoginRequest request) {
+    final PartnerLoginResult result = partnerService.login(request.toCommand());
+    return ApiBaseResponse.success(PartnerLoginResponse.from(result));
+  }
 }

@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface PropertyReader {
 
-    Property getById(Long id);
+  Property getById(Long id);
 
-    Page<Property> findByPartnerId(Long partnerId, Pageable pageable);
+  Page<Property> findByPartnerId(Long partnerId, Pageable pageable);
 }
