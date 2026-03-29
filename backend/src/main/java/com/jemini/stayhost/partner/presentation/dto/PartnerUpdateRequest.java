@@ -19,12 +19,12 @@ public record PartnerUpdateRequest(
     @Size(max = 50) String bankAccount
 ) {
 
-  public PartnerUpdateCommand toCommand() {
-    return PartnerUpdateCommand.builder()
-        .phone(this.phone)
-        .email(this.email)
-        .bankName(this.bankName)
-        .bankAccount(this.bankAccount)
-        .build();
-  }
+    public PartnerUpdateCommand toCommand() {
+        return PartnerUpdateCommand.builder()
+            .phone(this.phone)
+            .email(this.email)
+            .bankName(this.bankName)
+            .bankAccount(this.bankAccount)
+            .build();
+    }
 }

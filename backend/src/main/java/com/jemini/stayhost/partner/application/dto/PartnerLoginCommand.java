@@ -7,4 +7,5 @@ public record PartnerLoginCommand(
     String loginId,
     String password
 ) {
+
 }

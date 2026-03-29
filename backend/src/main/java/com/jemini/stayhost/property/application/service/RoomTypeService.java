@@ -20,84 +20,84 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomTypeService {
 
-  private final RoomTypeReader roomTypeReader;
-  private final RoomTypeManager roomTypeManager;
-  private final PropertyReader propertyReader;
-  private final ObjectMapper objectMapper;
+    private final RoomTypeReader roomTypeReader;
+    private final RoomTypeManager roomTypeManager;
+    private final PropertyReader propertyReader;
+    private final ObjectMapper objectMapper;
 
-  /**
-   * 객실 유형 등록. 숙소 소유권을 검증한다.
-   */
-  @Transactional
-  public RoomTypeResult createRoomType(
-      final Long propertyId,
-      final Long partnerId,
-      final RoomTypeCreateCommand command
-  ) {
-    final Property property = propertyReader.getById(propertyId);
-    property.validateOwner(partnerId);
+    /**
+     * 객실 유형 등록. 숙소 소유권을 검증한다.
+     */
+    @Transactional
+    public RoomTypeResult createRoomType(
+        final Long propertyId,
+        final Long partnerId,
+        final RoomTypeCreateCommand command
+    ) {
+        final Property property = propertyReader.getById(propertyId);
+        property.validateOwner(partnerId);
 
-    final RoomType roomType = buildRoomType(propertyId, command);
-    final RoomType saved = roomTypeManager.save(roomType);
+        final RoomType roomType = buildRoomType(propertyId, command);
+        final RoomType saved = roomTypeManager.save(roomType);
 
-    return RoomTypeResult.from(saved);
-  }
-
-  /**
-   * 숙소의 객실 유형 목록 조회. 소유권을 검증한다.
-   */
-  @Transactional(readOnly = true)
-  public List<RoomTypeResult> getRoomTypes(final Long propertyId, final Long partnerId) {
-    final Property property = propertyReader.getById(propertyId);
-    property.validateOwner(partnerId);
-
-    return roomTypeReader.findByPropertyId(propertyId).stream()
-        .map(RoomTypeResult::from)
-        .toList();
-  }
-
-  /**
-   * 객실 유형 수정. 숙소 소유권을 검증한다.
-   */
-  @Transactional
-  public RoomTypeResult updateRoomType(
-      final Long roomTypeId,
-      final Long partnerId,
-      final RoomTypeUpdateCommand command
-  ) {
-    final RoomType roomType = roomTypeReader.getById(roomTypeId);
-
-    validateRoomTypeOwner(roomType, partnerId);
-    roomType.update(command.name(), command.description(), command.maxOccupancy(), command.basePrice());
-
-    return RoomTypeResult.from(roomType);
-  }
-
-  private void validateRoomTypeOwner(final RoomType roomType, final Long partnerId) {
-    final Property property = propertyReader.getById(roomType.getPropertyId());
-    property.validateOwner(partnerId);
-  }
-
-  private RoomType buildRoomType(final Long propertyId, final RoomTypeCreateCommand command) {
-    return RoomType.create(
-        propertyId,
-        command.name(),
-        command.description(),
-        command.maxOccupancy(),
-        command.basePrice(),
-        toJson(command.amenities()),
-        command.totalRoomCount()
-    );
-  }
-
-  private String toJson(final List<String> amenities) {
-    if (amenities == null) {
-      return null;
+        return RoomTypeResult.from(saved);
     }
-    try {
-      return objectMapper.writeValueAsString(amenities);
-    } catch (JsonProcessingException e) {
-      return null;
+
+    /**
+     * 숙소의 객실 유형 목록 조회. 소유권을 검증한다.
+     */
+    @Transactional(readOnly = true)
+    public List<RoomTypeResult> getRoomTypes(final Long propertyId, final Long partnerId) {
+        final Property property = propertyReader.getById(propertyId);
+        property.validateOwner(partnerId);
+
+        return roomTypeReader.findByPropertyId(propertyId).stream()
+            .map(RoomTypeResult::from)
+            .toList();
     }
-  }
+
+    /**
+     * 객실 유형 수정. 숙소 소유권을 검증한다.
+     */
+    @Transactional
+    public RoomTypeResult updateRoomType(
+        final Long roomTypeId,
+        final Long partnerId,
+        final RoomTypeUpdateCommand command
+    ) {
+        final RoomType roomType = roomTypeReader.getById(roomTypeId);
+
+        validateRoomTypeOwner(roomType, partnerId);
+        roomType.update(command.name(), command.description(), command.maxOccupancy(), command.basePrice());
+
+        return RoomTypeResult.from(roomType);
+    }
+
+    private void validateRoomTypeOwner(final RoomType roomType, final Long partnerId) {
+        final Property property = propertyReader.getById(roomType.getPropertyId());
+        property.validateOwner(partnerId);
+    }
+
+    private RoomType buildRoomType(final Long propertyId, final RoomTypeCreateCommand command) {
+        return RoomType.create(
+            propertyId,
+            command.name(),
+            command.description(),
+            command.maxOccupancy(),
+            command.basePrice(),
+            toJson(command.amenities()),
+            command.totalRoomCount()
+        );
+    }
+
+    private String toJson(final List<String> amenities) {
+        if (amenities == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(amenities);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
 }

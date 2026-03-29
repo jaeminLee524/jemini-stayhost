@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface InventoryManager {
 
-  List<Inventory> saveAll(List<Inventory> inventories);
+    List<Inventory> saveAll(List<Inventory> inventories);
 }

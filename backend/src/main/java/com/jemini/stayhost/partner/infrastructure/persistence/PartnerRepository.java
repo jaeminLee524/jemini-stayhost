@@ -7,9 +7,9 @@ import java.util.Optional;
 
 public interface PartnerRepository extends JpaRepository<Partner, Long> {
 
-  Optional<Partner> findByLoginId(String loginId);
+    Optional<Partner> findByLoginId(String loginId);
 
-  boolean existsByLoginId(String loginId);
+    boolean existsByLoginId(String loginId);
 
-  boolean existsByBusinessNumber(String businessNumber);
+    boolean existsByBusinessNumber(String businessNumber);
 }

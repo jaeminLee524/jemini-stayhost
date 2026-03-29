@@ -7,7 +7,7 @@ public record ErrorMessage(
     String message
 ) {
 
-  public ErrorMessage(final ErrorCode errorCode, final String message) {
-    this(errorCode.name(), message);
-  }
+    public ErrorMessage(final ErrorCode errorCode, final String message) {
+        this(errorCode.name(), message);
+    }
 }

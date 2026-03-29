@@ -8,9 +8,9 @@ import java.util.List;
 
 @Builder
 public record RateBulkSetCommand(
-    LocalDate startDate,
-    LocalDate endDate,
-    BigDecimal price,
-    List<Integer> daysOfWeek
+        LocalDate startDate,
+        LocalDate endDate,
+        BigDecimal price,
+        List<Integer> daysOfWeek
 ) {
 }

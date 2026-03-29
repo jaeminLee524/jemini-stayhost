@@ -14,4 +14,5 @@ public record PropertyCreateCommand(
     LocalTime checkOutTime,
     String thumbnailUrl
 ) {
+
 }

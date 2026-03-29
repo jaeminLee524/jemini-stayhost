@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PartnerStatus {
 
-  PENDING("승인 대기"),
-  ACTIVE("활성"),
-  SUSPENDED("정지"),
-  ;
+    PENDING("승인 대기"),
+    ACTIVE("활성"),
+    SUSPENDED("정지"),
+    ;
 
-  private final String description;
+    private final String description;
 }

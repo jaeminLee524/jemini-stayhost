@@ -13,14 +13,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RateReaderImpl implements RateReader {
 
-  private final RateRepository rateRepository;
+    private final RateRepository rateRepository;
 
-  @Override
-  public List<Rate> findByRoomTypeIdAndDateBetween(
-      final Long roomTypeId,
-      final LocalDate startDate,
-      final LocalDate endDate
-  ) {
-    return rateRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
-  }
+    @Override
+    public List<Rate> findByRoomTypeIdAndDateBetween(
+            final Long roomTypeId,
+            final LocalDate startDate,
+            final LocalDate endDate
+    ) {
+        return rateRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
+    }
 }

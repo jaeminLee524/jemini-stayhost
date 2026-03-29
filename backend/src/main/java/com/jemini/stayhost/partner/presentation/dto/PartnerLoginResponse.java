@@ -20,34 +20,34 @@ public record PartnerLoginResponse(
     PartnerInfo partner
 ) {
 
-  @Builder
-  @Schema(description = "로그인한 파트너 정보")
-  public record PartnerInfo(
-      @Schema(description = "파트너 ID", example = "10")
-      Long id,
+    @Builder
+    @Schema(description = "로그인한 파트너 정보")
+    public record PartnerInfo(
+        @Schema(description = "파트너 ID", example = "10")
+        Long id,
 
-      @Schema(description = "사업자명", example = "㈜스테이호스트")
-      String businessName,
+        @Schema(description = "사업자명", example = "㈜스테이호스트")
+        String businessName,
 
-      @Schema(description = "상태", example = "ACTIVE")
-      String status
-  ) {
+        @Schema(description = "상태", example = "ACTIVE")
+        String status
+    ) {
 
-    public static PartnerInfo from(final PartnerLoginResult result) {
-      return PartnerInfo.builder()
-          .id(result.partnerId())
-          .businessName(result.businessName())
-          .status(result.status())
-          .build();
+        public static PartnerInfo from(final PartnerLoginResult result) {
+            return PartnerInfo.builder()
+                .id(result.partnerId())
+                .businessName(result.businessName())
+                .status(result.status())
+                .build();
+        }
     }
-  }
 
-  public static PartnerLoginResponse from(final PartnerLoginResult result) {
-    return PartnerLoginResponse.builder()
-        .accessToken(result.accessToken())
-        .tokenType("Bearer")
-        .expiresIn(result.expiresInSeconds())
-        .partner(PartnerInfo.from(result))
-        .build();
-  }
+    public static PartnerLoginResponse from(final PartnerLoginResult result) {
+        return PartnerLoginResponse.builder()
+            .accessToken(result.accessToken())
+            .tokenType("Bearer")
+            .expiresIn(result.expiresInSeconds())
+            .partner(PartnerInfo.from(result))
+            .build();
+    }
 }

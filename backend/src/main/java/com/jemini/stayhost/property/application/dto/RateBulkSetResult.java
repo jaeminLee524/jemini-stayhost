@@ -7,10 +7,10 @@ import java.time.LocalDate;
 
 @Builder
 public record RateBulkSetResult(
-    Long roomTypeId,
-    int appliedDates,
-    LocalDate startDate,
-    LocalDate endDate,
-    BigDecimal price
+        Long roomTypeId,
+        int appliedDates,
+        LocalDate startDate,
+        LocalDate endDate,
+        BigDecimal price
 ) {
 }

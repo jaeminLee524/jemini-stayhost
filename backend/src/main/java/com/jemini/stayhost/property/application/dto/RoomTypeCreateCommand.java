@@ -13,4 +13,5 @@ public record RoomTypeCreateCommand(
     List<String> amenities,
     int totalRoomCount
 ) {
+
 }

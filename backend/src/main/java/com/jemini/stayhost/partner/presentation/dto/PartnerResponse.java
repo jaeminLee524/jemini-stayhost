@@ -40,18 +40,18 @@ public record PartnerResponse(
     LocalDateTime createdAt
 ) {
 
-  public static PartnerResponse from(final PartnerResult result) {
-    return PartnerResponse.builder()
-        .id(result.id())
-        .businessName(result.businessName())
-        .businessNumber(result.businessNumber())
-        .representative(result.representative())
-        .phone(result.phone())
-        .email(result.email())
-        .bankName(result.bankName())
-        .bankAccount(result.bankAccount())
-        .status(result.status())
-        .createdAt(result.createdAt())
-        .build();
-  }
+    public static PartnerResponse from(final PartnerResult result) {
+        return PartnerResponse.builder()
+            .id(result.id())
+            .businessName(result.businessName())
+            .businessNumber(result.businessNumber())
+            .representative(result.representative())
+            .phone(result.phone())
+            .email(result.email())
+            .bankName(result.bankName())
+            .bankAccount(result.bankAccount())
+            .status(result.status())
+            .createdAt(result.createdAt())
+            .build();
+    }
 }

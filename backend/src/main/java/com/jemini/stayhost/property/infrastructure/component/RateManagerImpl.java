@@ -12,10 +12,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RateManagerImpl implements RateManager {
 
-  private final RateRepository rateRepository;
+    private final RateRepository rateRepository;
 
-  @Override
-  public List<Rate> saveAll(final List<Rate> rates) {
-    return rateRepository.saveAll(rates);
-  }
+    @Override
+    public List<Rate> saveAll(final List<Rate> rates) {
+        return rateRepository.saveAll(rates);
+    }
 }

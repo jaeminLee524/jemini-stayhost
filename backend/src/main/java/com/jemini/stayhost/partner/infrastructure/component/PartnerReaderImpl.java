@@ -12,27 +12,27 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PartnerReaderImpl implements PartnerReader {
 
-  private final PartnerRepository partnerRepository;
+    private final PartnerRepository partnerRepository;
 
-  @Override
-  public Partner getById(final Long id) {
-    return partnerRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException(ErrorCode.PARTNER_NOT_FOUND));
-  }
+    @Override
+    public Partner getById(final Long id) {
+        return partnerRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.PARTNER_NOT_FOUND));
+    }
 
-  @Override
-  public Partner getByLoginId(final String loginId) {
-    return partnerRepository.findByLoginId(loginId)
-        .orElseThrow(() -> new NotFoundException(ErrorCode.PARTNER_NOT_FOUND));
-  }
+    @Override
+    public Partner getByLoginId(final String loginId) {
+        return partnerRepository.findByLoginId(loginId)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.PARTNER_NOT_FOUND));
+    }
 
-  @Override
-  public boolean existsByLoginId(final String loginId) {
-    return partnerRepository.existsByLoginId(loginId);
-  }
+    @Override
+    public boolean existsByLoginId(final String loginId) {
+        return partnerRepository.existsByLoginId(loginId);
+    }
 
-  @Override
-  public boolean existsByBusinessNumber(final String businessNumber) {
-    return partnerRepository.existsByBusinessNumber(businessNumber);
-  }
+    @Override
+    public boolean existsByBusinessNumber(final String businessNumber) {
+        return partnerRepository.existsByBusinessNumber(businessNumber);
+    }
 }

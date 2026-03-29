@@ -11,4 +11,5 @@ public record PropertyUpdateCommand(
     LocalTime checkOutTime,
     String thumbnailUrl
 ) {
+
 }

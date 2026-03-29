@@ -2,6 +2,8 @@ package com.jemini.stayhost.property.presentation.controller;
 
 import com.jemini.stayhost.common.response.ApiBaseResponse;
 import com.jemini.stayhost.common.security.PartnerId;
+import com.jemini.stayhost.property.application.dto.InventoryBulkSetResult;
+import com.jemini.stayhost.property.application.dto.InventoryListResult;
 import com.jemini.stayhost.property.application.service.InventoryService;
 import com.jemini.stayhost.property.presentation.docs.ExtranetInventoryDocs;
 import com.jemini.stayhost.property.presentation.dto.InventoryBulkSetRequest;
@@ -18,28 +20,28 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class ExtranetInventoryController implements ExtranetInventoryDocs {
 
-  private final InventoryService inventoryService;
+    private final InventoryService inventoryService;
 
-  @PutMapping("/api/extranet/room-types/{id}/inventory")
-  public ApiBaseResponse<InventoryBulkSetResponse> bulkSet(
-      @PathVariable final Long id,
-      final PartnerId partnerId,
-      @RequestBody @Valid final InventoryBulkSetRequest request
-  ) {
-    return ApiBaseResponse.success(
-        InventoryBulkSetResponse.from(inventoryService.bulkSet(id, partnerId.value(), request.toCommand()))
-    );
-  }
+    @PutMapping("/api/extranet/room-types/{id}/inventory")
+    public ApiBaseResponse<InventoryBulkSetResponse> bulkSet(
+        @PathVariable final Long id,
+        final PartnerId partnerId,
+        @RequestBody @Valid final InventoryBulkSetRequest request
+    ) {
+        InventoryBulkSetResult result = inventoryService.bulkSet(id, partnerId.value(), request.toCommand());
 
-  @GetMapping("/api/extranet/room-types/{id}/inventory")
-  public ApiBaseResponse<InventoryListResponse> getInventory(
-      @PathVariable final Long id,
-      final PartnerId partnerId,
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate startDate,
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate endDate
-  ) {
-    return ApiBaseResponse.success(
-        InventoryListResponse.from(inventoryService.getInventory(id, partnerId.value(), startDate, endDate))
-    );
-  }
+        return ApiBaseResponse.success(InventoryBulkSetResponse.from(result));
+    }
+
+    @GetMapping("/api/extranet/room-types/{id}/inventory")
+    public ApiBaseResponse<InventoryListResponse> getInventory(
+        @PathVariable final Long id,
+        final PartnerId partnerId,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate startDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate endDate
+    ) {
+        InventoryListResult results = inventoryService.getInventory(id, partnerId.value(), startDate, endDate);
+
+        return ApiBaseResponse.success(InventoryListResponse.from(results));
+    }
 }

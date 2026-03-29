@@ -19,18 +19,18 @@ public record PartnerResult(
     LocalDateTime createdAt
 ) {
 
-  public static PartnerResult from(final Partner partner) {
-    return PartnerResult.builder()
-        .id(partner.getId())
-        .businessName(partner.getBusinessName())
-        .businessNumber(partner.getBusinessNumber())
-        .representative(partner.getRepresentative())
-        .phone(partner.getPhone())
-        .email(partner.getEmail())
-        .bankName(partner.getBankName())
-        .bankAccount(partner.getBankAccount())
-        .status(partner.getStatus().name())
-        .createdAt(partner.getCreatedAt())
-        .build();
-  }
+    public static PartnerResult from(final Partner partner) {
+        return PartnerResult.builder()
+            .id(partner.getId())
+            .businessName(partner.getBusinessName())
+            .businessNumber(partner.getBusinessNumber())
+            .representative(partner.getRepresentative())
+            .phone(partner.getPhone())
+            .email(partner.getEmail())
+            .bankName(partner.getBankName())
+            .bankAccount(partner.getBankAccount())
+            .status(partner.getStatus().name())
+            .createdAt(partner.getCreatedAt())
+            .build();
+    }
 }

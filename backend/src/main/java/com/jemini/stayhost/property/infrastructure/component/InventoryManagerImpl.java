@@ -12,10 +12,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InventoryManagerImpl implements InventoryManager {
 
-  private final InventoryRepository inventoryRepository;
+    private final InventoryRepository inventoryRepository;
 
-  @Override
-  public List<Inventory> saveAll(final List<Inventory> inventories) {
-    return inventoryRepository.saveAll(inventories);
-  }
+    @Override
+    public List<Inventory> saveAll(final List<Inventory> inventories) {
+        return inventoryRepository.saveAll(inventories);
+    }
 }

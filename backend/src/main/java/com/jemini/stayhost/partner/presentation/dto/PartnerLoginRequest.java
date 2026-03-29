@@ -13,10 +13,10 @@ public record PartnerLoginRequest(
     @NotBlank String password
 ) {
 
-  public PartnerLoginCommand toCommand() {
-    return PartnerLoginCommand.builder()
-        .loginId(this.loginId)
-        .password(this.password)
-        .build();
-  }
+    public PartnerLoginCommand toCommand() {
+        return PartnerLoginCommand.builder()
+            .loginId(this.loginId)
+            .password(this.password)
+            .build();
+    }
 }

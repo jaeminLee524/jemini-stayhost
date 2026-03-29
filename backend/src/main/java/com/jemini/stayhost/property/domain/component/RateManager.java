@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface RateManager {
 
-  List<Rate> saveAll(List<Rate> rates);
+    List<Rate> saveAll(List<Rate> rates);
 }

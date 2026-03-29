@@ -9,4 +9,5 @@ public record PartnerUpdateCommand(
     String bankName,
     String bankAccount
 ) {
+
 }

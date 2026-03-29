@@ -21,19 +21,19 @@ public record RoomTypeResult(
     LocalDateTime updatedAt
 ) {
 
-  public static RoomTypeResult from(final RoomType roomType) {
-    return RoomTypeResult.builder()
-        .id(roomType.getId())
-        .propertyId(roomType.getPropertyId())
-        .name(roomType.getName())
-        .description(roomType.getDescription())
-        .maxOccupancy(roomType.getMaxOccupancy())
-        .basePrice(roomType.getBasePrice())
-        .amenities(roomType.getAmenities())
-        .totalRoomCount(roomType.getTotalRoomCount())
-        .status(roomType.getStatus().name())
-        .createdAt(roomType.getCreatedAt())
-        .updatedAt(roomType.getUpdatedAt())
-        .build();
-  }
+    public static RoomTypeResult from(final RoomType roomType) {
+        return RoomTypeResult.builder()
+            .id(roomType.getId())
+            .propertyId(roomType.getPropertyId())
+            .name(roomType.getName())
+            .description(roomType.getDescription())
+            .maxOccupancy(roomType.getMaxOccupancy())
+            .basePrice(roomType.getBasePrice())
+            .amenities(roomType.getAmenities())
+            .totalRoomCount(roomType.getTotalRoomCount())
+            .status(roomType.getStatus().name())
+            .createdAt(roomType.getCreatedAt())
+            .updatedAt(roomType.getUpdatedAt())
+            .build();
+    }
 }

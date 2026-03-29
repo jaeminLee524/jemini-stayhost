@@ -17,11 +17,11 @@ public record PartnerRegisterResponse(
     String status
 ) {
 
-  public static PartnerRegisterResponse from(final PartnerResult result) {
-    return PartnerRegisterResponse.builder()
-        .partnerId(result.id())
-        .businessName(result.businessName())
-        .status(result.status())
-        .build();
-  }
+    public static PartnerRegisterResponse from(final PartnerResult result) {
+        return PartnerRegisterResponse.builder()
+            .partnerId(result.id())
+            .businessName(result.businessName())
+            .status(result.status())
+            .build();
+    }
 }

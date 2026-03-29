@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PartnerManagerImpl implements PartnerManager {
 
-  private final PartnerRepository partnerRepository;
+    private final PartnerRepository partnerRepository;
 
-  @Override
-  public Partner save(final Partner partner) {
-    return partnerRepository.save(partner);
-  }
+    @Override
+    public Partner save(final Partner partner) {
+        return partnerRepository.save(partner);
+    }
 }

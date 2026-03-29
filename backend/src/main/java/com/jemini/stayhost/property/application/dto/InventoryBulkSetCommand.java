@@ -6,8 +6,8 @@ import java.time.LocalDate;
 
 @Builder
 public record InventoryBulkSetCommand(
-    LocalDate startDate,
-    LocalDate endDate,
-    int totalCount
+        LocalDate startDate,
+        LocalDate endDate,
+        int totalCount
 ) {
 }

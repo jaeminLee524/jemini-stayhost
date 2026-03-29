@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface InventoryReader {
 
-  List<Inventory> findByRoomTypeIdAndDateBetween(Long roomTypeId, LocalDate startDate, LocalDate endDate);
+    List<Inventory> findByRoomTypeIdAndDateBetween(Long roomTypeId, LocalDate startDate, LocalDate endDate);
 }

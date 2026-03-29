@@ -19,38 +19,38 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
 
-  private final RoomTypeService roomTypeService;
+    private final RoomTypeService roomTypeService;
 
-  @PostMapping("/api/extranet/properties/{propertyId}/room-types")
-  @ResponseStatus(HttpStatus.CREATED)
-  public ApiBaseResponse<RoomTypeResponse> create(
-      @PathVariable final Long propertyId,
-      final PartnerId partnerId,
-      @RequestBody @Valid final RoomTypeCreateRequest request
-  ) {
-    final RoomTypeResult result = roomTypeService.createRoomType(propertyId, partnerId.value(), request.toCommand());
+    @PostMapping("/api/extranet/properties/{propertyId}/room-types")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiBaseResponse<RoomTypeResponse> create(
+        @PathVariable final Long propertyId,
+        final PartnerId partnerId,
+        @RequestBody @Valid final RoomTypeCreateRequest request
+    ) {
+        final RoomTypeResult result = roomTypeService.createRoomType(propertyId, partnerId.value(), request.toCommand());
 
-    return ApiBaseResponse.success(RoomTypeResponse.from(result));
-  }
+        return ApiBaseResponse.success(RoomTypeResponse.from(result));
+    }
 
-  @GetMapping("/api/extranet/properties/{propertyId}/room-types")
-  public ApiBaseResponse<List<RoomTypeResponse>> getRoomTypes(
-      @PathVariable final Long propertyId,
-      final PartnerId partnerId
-  ) {
-    List<RoomTypeResult> roomTypes = roomTypeService.getRoomTypes(propertyId, partnerId.value());
+    @GetMapping("/api/extranet/properties/{propertyId}/room-types")
+    public ApiBaseResponse<List<RoomTypeResponse>> getRoomTypes(
+        @PathVariable final Long propertyId,
+        final PartnerId partnerId
+    ) {
+        List<RoomTypeResult> roomTypes = roomTypeService.getRoomTypes(propertyId, partnerId.value());
 
-    return ApiBaseResponse.success(RoomTypeResponse.mapToResponse(roomTypes));
-  }
+        return ApiBaseResponse.success(RoomTypeResponse.mapToResponse(roomTypes));
+    }
 
-  @PutMapping("/api/extranet/room-types/{id}")
-  public ApiBaseResponse<RoomTypeResponse> update(
-      @PathVariable final Long id,
-      final PartnerId partnerId,
-      @RequestBody @Valid final RoomTypeUpdateRequest request
-  ) {
-    final RoomTypeResult result = roomTypeService.updateRoomType(id, partnerId.value(), request.toCommand());
+    @PutMapping("/api/extranet/room-types/{id}")
+    public ApiBaseResponse<RoomTypeResponse> update(
+        @PathVariable final Long id,
+        final PartnerId partnerId,
+        @RequestBody @Valid final RoomTypeUpdateRequest request
+    ) {
+        final RoomTypeResult result = roomTypeService.updateRoomType(id, partnerId.value(), request.toCommand());
 
-    return ApiBaseResponse.success(RoomTypeResponse.from(result));
-  }
+        return ApiBaseResponse.success(RoomTypeResponse.from(result));
+    }
 }

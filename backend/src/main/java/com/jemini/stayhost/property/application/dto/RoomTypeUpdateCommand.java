@@ -12,4 +12,5 @@ public record RoomTypeUpdateCommand(
     BigDecimal basePrice,
     List<String> amenities
 ) {
+
 }

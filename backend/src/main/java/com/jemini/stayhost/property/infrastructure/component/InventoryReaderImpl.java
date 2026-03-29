@@ -13,14 +13,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InventoryReaderImpl implements InventoryReader {
 
-  private final InventoryRepository inventoryRepository;
+    private final InventoryRepository inventoryRepository;
 
-  @Override
-  public List<Inventory> findByRoomTypeIdAndDateBetween(
-      final Long roomTypeId,
-      final LocalDate startDate,
-      final LocalDate endDate
-  ) {
-    return inventoryRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
-  }
+    @Override
+    public List<Inventory> findByRoomTypeIdAndDateBetween(
+            final Long roomTypeId,
+            final LocalDate startDate,
+            final LocalDate endDate
+    ) {
+        return inventoryRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
+    }
 }
