@@ -656,6 +656,24 @@ chore: Testcontainers MySQL 의존성 추가
 - Single Level of Abstraction + Composed Method Pattern: 하나의 메서드는 하나의 추상화 수준만 가진다
 - Extract Method: 복합 로직은 private 메서드로 추출하여 메인 메서드의 추상화 수준을 통일한다
 - 정적 팩토리 메서드: builder는 내부에서만, 비즈니스 로직에서는 `Reservation.create(cmd, ...)` 호출
+- Step-Down Rule (Robert C. Martin, Clean Code): 클래스 내 메서드 선언 순서는 public → private 순이어야 한다. private 메서드는 처음 호출되는 순서대로 배치한다. 코드를 위에서 아래로 읽을 때 신문 기사처럼 추상화 수준이 자연스럽게 낮아지도록 한다.
+
+```java
+// 올바름: public 먼저, private는 호출 순서대로
+public void register(RegisterCommand command) {
+    validateDuplicate(command);   // private 1번째 호출
+    Partner partner = buildPartner(command);  // private 2번째 호출
+    ...
+}
+
+private void validateDuplicate(RegisterCommand command) { ... }   // 1번째 정의
+private Partner buildPartner(RegisterCommand command) { ... }     // 2번째 정의
+
+// 잘못됨: private가 public보다 위에 있거나, 호출 순서와 정의 순서가 다름
+private void buildPartner(...) { ... }   // 2번째 호출인데 먼저 정의
+private void validateDuplicate(...) { ... } // 1번째 호출인데 나중에 정의
+public void register(...) { ... }
+```
 
 ### record 스타일
 
