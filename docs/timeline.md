@@ -30,13 +30,13 @@ Day 3 — 프로젝트 셋업 + API 구현:
 12. Extranet: 객실 유형 CRUD
 13. Extranet: 요금 bulk 설정/조회
 14. Extranet: 재고 bulk 설정/조회
-15. Extranet: 예약 목록 조회
-16. Customer: 회원가입/로그인
-17. Customer: 숙소 검색 (지역/이름, 페이징)
-18. Customer: 숙소 상세 + 요금 조회
-19. Customer: 예약 생성 (기본)
-20. Customer: 예약 취소
-21. Customer: 내 예약 목록/상세
+15. Customer: 회원가입/로그인
+16. Customer: 숙소 검색 (지역/이름, 페이징)
+17. Customer: 숙소 상세 + 요금 조회
+18. Customer: 예약 생성 (기본)
+19. Customer: 예약 취소
+20. Customer: 내 예약 목록/상세
+21. Extranet: 예약 목록/상세 조회
 
 Day 4 — 동시성 + Supplier + 마무리:
 22. Caffeine 캐시 설정 (property, roomType, rate)

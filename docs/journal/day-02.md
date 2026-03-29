@@ -40,3 +40,52 @@
 - [당근페이 백엔드 아키텍처가 걸어온 여정](https://medium.com/daangn/%EB%8B%B9%EA%B7%BC%ED%8E%98%EC%9D%B4-%EB%B0%B1%EC%97%94%EB%93%9C-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98%EA%B0%80-%EA%B1%B8%EC%96%B4%EC%98%A8-%EC%97%AC%EC%A0%95-98615d5a6b06)
 - [Booking.com Extranet](https://account.booking.com/sign-in)
 - 기존 프로젝트: MDCLoggingFilter, MdcTaskDecorator, LoggingAop, DevOpenApiConfig 패턴 참고
+
+---
+
+## Day 2 (cont.) - 구현 (3/29~30)
+
+### 수행 내용
+
+Extranet API 구현:
+- 파트너 등록/로그인 API (JWT 발급)
+- 숙소 CRUD + 상태 변경 API
+- 객실 유형 CRUD API
+- 요금 날짜 범위 bulk 설정/조회 API (daysOfWeek 필터링, UPSERT)
+- 재고 날짜 범위 bulk 설정/조회 API (totalCount < reservedCount 거부)
+
+Customer API 구현:
+- 회원가입/로그인/내정보 조회 API
+
+코드 품질 개선:
+- 전체 Java 파일 들여쓰기 2칸 -> 4칸 통일 (intellij-java-google-style.xml 기준)
+- Step-Down Rule 적용 (private 메서드 호출 순서대로 배치)
+- Command DTO @Builder 패턴 통일, Request toCommand()에서 builder 직접 사용 + this. 키워드
+- Response/Result DTO @Builder 패턴 통일
+- Rate/Inventory Service Composed Method Pattern 적용
+- Inventory.updateTotalCount() 도메인 내부 검증 (Tell Don't Ask)
+- Property.create()에 latitude/longitude/thumbnailUrl 추가 (API 스펙 충족)
+- Partner.create()에 bankName/bankAccount 추가
+- Property.update()/Partner.update() partial update 지원 (null 필드 무시)
+- RoomType.update()에 amenities 반영
+- 가격 유효성 검증 (@Positive) 추가
+- 날짜 범위 검증 통일 (MAX_DATE_RANGE_DAYS 30일 제한)
+- 하드코딩 상수 추출 (ROLE_PARTNER, SECONDS_DIVISOR 등)
+- 메서드 파라미터 개행 원칙 적용
+
+테스트 (Phase 1-2, 70개):
+- Domain Model Unit Tests 29개 (Partner, Property, RoomType, Rate, Inventory)
+- JwtProvider Unit Tests 6개
+- ControllerTestBase + smoke test 2개 (PartnerId ArgumentResolver 체인 검증)
+- Service Unit Tests 31개 (PartnerService, PropertyService, RoomTypeService, RateService, InventoryService)
+
+문서:
+- 코드 컨벤션 docs에 Step-Down Rule, 상수 추출 원칙, 메서드 파라미터 개행 원칙 추가
+- 들여쓰기 4스페이스로 문서 정정
+- timeline.md 순서 변경 (Customer API -> Extranet 예약 조회)
+
+### 의사결정
+- [Bottom-Up 테스트 전략]: Domain Unit -> Service Unit -> Controller Slice -> Integration 순. 테스트가 없는 상태에서 빠른 단위 테스트 기반 구축 우선
+- [ControllerTestBase에 setPartnerAuthentication()]: @WithMockUser 사용 금지. PartnerIdResolver가 instanceof JwtPrincipal로 검사하므로 SecurityContextHolder에 JwtPrincipal 직접 세팅
+- [Request DTO에서 early validation]: toCommand() 시점에 날짜 범위/가격 검증. Service 레이어에도 방어적 검증 유지 (프로그래밍적 호출 대비)
+- [Customer API 먼저 구현]: 예약 생성(Customer)이 없으면 예약 조회(Extranet)를 테스트할 데이터가 없으므로 순서 변경
