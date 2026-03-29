@@ -34,4 +34,4 @@
 | 모니터링 설계 | 메트릭 정의 및 알림 정책 초안 요청 | 비관적 락 대기 시간, 동시 예약 충돌 수 등 프로젝트 특성에 맞는 커스텀 메트릭을 직접 선정. 알림 임계치(P99 > 2s 등)도 직접 판단                                                            |
 | 보안 설계 | JWT 인증/인가 설계 초안 요청 | 고객/파트너 인증 체계 분리 결정, 파트너 숙소 소유권 검증 패턴 설계, OAuth2 제외 판단은 직접 내림                                                                               |
 | Caffeine CAS 전략 | Caffeine CAS + DB 비관적 락 2단계 플로우 분석 요청 | 단일 서버에서 AtomicInteger CAS를 1차 필터로 활용하는 아이디어를 직접 제안. AI와 함께 워밍업, 롤백, 멀티 나이트 처리 등 엣지 케이스를 검토하여 최종 설계 확정                                      |
-| 코딩 원칙 | Tell Don't Ask, SLA 등 원칙 정리 요청 | ut-kr-c2c 컨벤션에서 DTO Naming(Command/Result/Search), Component Naming(Reader/Manager) 패턴을 직접 선별하여 채택. MapStruct는 과하다고 직접 판단하여 미채택        |
+| 코딩 원칙 | Tell Don't Ask, SLA 등 원칙 정리 요청 | 기존 프로젝트 컨벤션에서 DTO Naming(Command/Result/Search), Component Naming(Reader/Manager) 패턴을 직접 선별하여 채택. MapStruct는 과하다고 직접 판단하여 미채택        |

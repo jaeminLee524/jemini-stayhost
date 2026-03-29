@@ -422,26 +422,35 @@ GET    /api/admin/suppliers
 
 ## 4. 응답 형식
 
-모든 API 응답은 `ApiResponse<T>` 래퍼로 감싼다. 클라이언트가 응답 구조를 일관되게 처리할 수 있도록 하기 위함이다.
+모든 API 응답은 `ApiBaseResponse<T>` 래퍼로 감싼다. 클라이언트가 응답 구조를 일관되게 처리할 수 있도록 하기 위함이다.
 
 ```java
-// common/response/ApiResponse.java
-public record ApiResponse<T>(
-    boolean success,
-    T data,
-    String message,
-    String errorCode
+// common/response/ApiBaseResponse.java
+public record ApiBaseResponse<T>(
+        ResultType result,
+        T data,
+        ErrorMessage error
 ) {
-    public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, data, null, null);
+    public static <T> ApiBaseResponse<T> success(T data) {
+        return new ApiBaseResponse<>(ResultType.SUCCESS, data, null);
     }
 
-    public static <T> ApiResponse<T> ok(T data, String message) {
-        return new ApiResponse<>(true, data, message, null);
+    public static ApiBaseResponse<Void> success() {
+        return new ApiBaseResponse<>(ResultType.SUCCESS, null, null);
     }
 
-    public static ApiResponse<Void> error(String message, String errorCode) {
-        return new ApiResponse<>(false, null, message, errorCode);
+    public static ApiBaseResponse<?> error(ErrorCode errorCode, String message) {
+        return new ApiBaseResponse<>(ResultType.ERROR, null, new ErrorMessage(errorCode, message));
+    }
+}
+
+// common/response/ResultType.java
+public enum ResultType { SUCCESS, ERROR }
+
+// common/response/ErrorMessage.java
+public record ErrorMessage(String code, String message) {
+    public ErrorMessage(ErrorCode errorCode, String message) {
+        this(errorCode.name(), message);
     }
 }
 ```
@@ -449,12 +458,12 @@ public record ApiResponse<T>(
 ```java
 // 페이지네이션 응답
 public record PageResponse<T>(
-    List<T> content,
-    int page,
-    int size,
-    long totalElements,
-    int totalPages,
-    boolean hasNext
+        List<T> content,
+        int page,
+        int size,
+        long totalElements,
+        int totalPages,
+        boolean hasNext
 ) { }
 ```
 
@@ -463,22 +472,23 @@ public record PageResponse<T>(
 ```json
 // 성공
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 1,
     "name": "한강뷰 호텔",
     "region": "서울"
   },
-  "message": null,
-  "errorCode": null
+  "error": null
 }
 
 // 실패
 {
-  "success": false,
+  "result": "ERROR",
   "data": null,
-  "message": "재고가 부족합니다.",
-  "errorCode": "INVENTORY_NOT_ENOUGH"
+  "error": {
+    "code": "INVENTORY_INSUFFICIENT",
+    "message": "선택한 날짜에 객실이 매진되었습니다."
+  }
 }
 ```
 
@@ -489,52 +499,52 @@ public record PageResponse<T>(
 ### 구조
 
 ```
-GlobalExceptionHandler (common/exception/)
-    ├── 도메인별 커스텀 예외 처리
-    ├── Validation 예외 처리 (MethodArgumentNotValidException)
-    ├── 인증 예외 처리 (401, 403)
-    └── 기타 예외 처리 (500)
+ApiControllerAdvice (common/exception/)
+    ├── NotFoundException → 404 (log.info)
+    ├── BusinessException → 400/409 (log.warn)
+    ├── AuthenticationException → 401 (log.info)
+    ├── AuthorizationException → 403 (log.info)
+    ├── MethodArgumentNotValidException → 400 (log.info)
+    └── Exception → 500 (log.error)
 ```
 
-### 도메인별 커스텀 예외
+### 예외 계층
 
-예외는 도메인 패키지 내에 정의한다. 공통 베이스 클래스에서 에러 코드를 강제한다.
+공통 베이스 클래스에서 ErrorCode enum을 강제한다. 도메인별 예외를 만들지 않고, ErrorCode로 구분한다.
 
 ```java
 // common/exception/BusinessException.java
 public class BusinessException extends RuntimeException {
-    private final String errorCode;
+    private final ErrorCode errorCode;
 
-    public BusinessException(String message, String errorCode) {
-        super(message);
+    public BusinessException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
 
-    public String getErrorCode() { return errorCode; }
+    public BusinessException(ErrorCode errorCode, String detail) {
+        super(detail);
+        this.errorCode = errorCode;
+    }
 }
+
+// common/exception/NotFoundException.java
+public class NotFoundException extends BusinessException {
+    public NotFoundException(ErrorCode errorCode) {
+        super(errorCode);
+    }
+}
+
+// common/exception/AuthenticationException.java (커스텀, Spring Security 것 아님)
+// common/exception/AuthorizationException.java
 ```
 
+사용 예시:
+
 ```java
-// booking/domain/InsufficientInventoryException.java
-public class InsufficientInventoryException extends BusinessException {
-    public InsufficientInventoryException() {
-        super("재고가 부족합니다.", "INVENTORY_NOT_ENOUGH");
-    }
-}
-
-// property/domain/PropertyNotFoundException.java
-public class PropertyNotFoundException extends BusinessException {
-    public PropertyNotFoundException(Long id) {
-        super("숙소를 찾을 수 없습니다. id=" + id, "PROPERTY_NOT_FOUND");
-    }
-}
-
-// partner/domain/UnauthorizedPartnerAccessException.java
-public class UnauthorizedPartnerAccessException extends BusinessException {
-    public UnauthorizedPartnerAccessException() {
-        super("해당 숙소에 대한 권한이 없습니다.", "PARTNER_ACCESS_DENIED");
-    }
-}
+throw new NotFoundException(ErrorCode.PROPERTY_NOT_FOUND);
+throw new BusinessException(ErrorCode.INVENTORY_INSUFFICIENT);
+throw new BusinessException(ErrorCode.DUPLICATE_RESERVATION, "2026-04-01 중복");
 ```
 
 ### GlobalExceptionHandler
@@ -632,9 +642,34 @@ chore: Testcontainers MySQL 의존성 추가
 
 ### 기본 원칙
 
-- 한 줄 최대 120자. IDE의 우측 여백 가이드로 시각적으로 확인한다.
-- Google Java Style Guide를 기반으로 하되, 들여쓰기는 4 스페이스를 사용한다.
+- Google Java Style Guide를 기반으로 하되, 들여쓰기는 4 스페이스를 사용한다. (intellij-java-google-style.xml 참고)
+- 한 줄에 충분히 들어가는 코드는 불필요하게 줄바꿈하지 않는다 (Google Style 200자 기준)
 - `final` 변수를 선호한다. 메서드 파라미터, 지역 변수에 가능한 한 `final`을 붙인다. 재할당이 필요하지 않음을 명시적으로 표현한다.
+
+### 메서드 설계 원칙
+
+- Tell Don't Ask: 객체에게 판단을 위임한다. 외부에서 상태를 꺼내 판단하지 않고, 객체의 메서드를 호출한다 (예: `property.validateOwner(partnerId)`)
+- Single Level of Abstraction + Composed Method Pattern: 하나의 메서드는 하나의 추상화 수준만 가진다
+- Extract Method: 복합 로직은 private 메서드로 추출하여 메인 메서드의 추상화 수준을 통일한다
+- 정적 팩토리 메서드: builder는 내부에서만, 비즈니스 로직에서는 `Reservation.create(cmd, ...)` 호출
+
+### record 스타일
+
+- record 컴포넌트가 3개 이상이면 각 줄로 분리한다 (Put record components on separate lines)
+
+```java
+// 3개 이상: 줄 분리
+public record JwtPrincipal(
+        Long subjectId,
+        String role,
+        String context
+) {
+}
+
+// 2개 이하: 한 줄 허용
+public record UserId(Long value) {
+}
+```
 
 ```java
 // 선호

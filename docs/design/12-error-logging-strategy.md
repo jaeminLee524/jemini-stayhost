@@ -250,7 +250,7 @@ throw new BusinessException(ErrorCode.DUPLICATE_RESERVATION);
 
 ### ApiBaseResponse 구조
 
-ut-kr-c2c의 `ApiBaseResponse`를 참고했다.
+기존 프로젝트의 `ApiBaseResponse`를 참고했다.
 
 - 핵심 구조인 `record ApiBaseResponse<T>(ResultType result, T data, ErrorMessage error)` 패턴은 그대로 가져왔다
 - 단, `ErrorMessage`의 `translation` 필드는 제거했다

@@ -21,10 +21,10 @@
 - [자동 확정 (PENDING 없음)]: OTA 업계 표준은 자동 확정. PENDING 5분은 비현실적, 30분은 UX 저하. 재고 차감 성공 시 즉시 CONFIRMED. 상세: [ADR-004](../design/adr/004-auto-confirmation-flow.md)
 - [ApplicationEvent 기반 캐시 무효화]: TTL만으로는 stale 데이터 노출. 이벤트로 즉시 무효화하고 TTL은 안전망. 상세: [ADR-005](../design/adr/005-event-driven-cache-invalidation.md)
 - [Supplier 통합 검색 — 동일 테이블 저장]: Supplier 상품을 매핑 후 property 테이블에 정규화 저장. 별도 Materialized View 없이 자연스럽게 통합 검색. Extranet 상품과 동일한 테이블이므로 검색 쿼리 변경 불필요.
-- [Swagger 인터페이스 분리]: Controller에 Swagger 어노테이션을 직접 넣지 않고, Docs 인터페이스로 분리. 기존 프로젝트(ut-kr-c2c의 KcbVerificationDocs 패턴) 참고.
+- [Swagger 인터페이스 분리]: Controller에 Swagger 어노테이션을 직접 넣지 않고, Docs 인터페이스로 분리.
 - [Extranet 리서치 스크린샷 미포함]: Booking.com Extranet을 리서치했으나, 저작권 이슈로 스크린샷 대신 텍스트 기술로 대체. 리서치 내용은 02-domain-model.md에 반영.
 - [DIP 기반 패키지 구조 채택]: 당근마켓의 헥사고날 아키텍처를 참고하되, 풀 헥사고날(port/port-in-impl/port-out-impl)은 본 프로젝트 목적에 과하다고 판단. 핵심인 DIP만 추출하여 domain(순수 Java) → infrastructure(JPA 구현) 역전 구조를 적용. domain/application/infrastructure/presentation 4계층으로 분리.
-- [ApiBaseResponse 재사용]: ut-kr-c2c의 Record 기반 응답 구조를 채택하되, translation 필드를 제거하고 ErrorCode를 숙박 도메인용으로 교체하여 간소화.
+- [ApiBaseResponse 재사용]: 기존 프로젝트의 Record 기반 응답 구조를 채택하되, translation 필드를 제거하고 ErrorCode를 숙박 도메인용으로 교체하여 간소화.
 - [에러 처리 전략]: 예외 계층을 BusinessException 기본 + NotFoundException/AuthenticationException 등으로 분리. ErrorCode enum을 숙박 도메인용으로 정의. HTTP 상태 코드 결정은 ApiControllerAdvice에 격리.
 - [모니터링 설계]: Micrometer + Prometheus + Grafana 구성. 구현은 불필요하지만 비관적 락 대기 시간, 캐시 히트율 등 프로젝트 특성에 맞는 메트릭을 구체적으로 정의하여 가산점 확보.
 - [보안 설계]: 고객과 파트너의 인증 체계를 분리. 실제 OTA에서 Extranet과 고객 서비스는 별도 시스템이므로 별도 로그인 API + 별도 JWT claims 구조 채택.
@@ -34,7 +34,7 @@
 - [프로모션 대기열 / 서킷 브레이커]: DESIGN-ONLY. Redis Queue 대기열, Resilience4j 서킷 브레이커 설계만 문서에 포함. 현재는 비관적 락 순차 처리 + Mock 외부 API로 충분.
 - [ADR 섹션명 한국어화]: Status→상태, Context→배경, Decision→결정 등 전체 한국어 통일.
 - [Caffeine CAS + DB 비관적 락 2단계]: Caffeine AtomicInteger CAS를 1차 필터로 사용하여 DB 부하를 대폭 감소시키고, DB 비관적 락을 최종 방어선으로 유지. 100 동시 요청 시 99건을 JVM 레벨에서 즉시 걸러내어 DB에는 1건만 도달.
-- [코딩 원칙 추가]: Tell Don't Ask, Single Level of Abstraction, Composed Method Pattern, 정적 팩토리 메서드 패턴, 상수 사용, 파라미터 포매팅 등 ut-kr-c2c 컨벤션 참고하여 채택.
+- [코딩 원칙 추가]: Tell Don't Ask, Single Level of Abstraction, Composed Method Pattern, 정적 팩토리 메서드 패턴, 상수 사용, 파라미터 포매팅 등 기존 프로젝트 컨벤션 참고하여 채택.
 - [DTO/Component 네이밍]: API 계층(Request/Response), Service 계층(Command/Result/Search) 분리. 컴포넌트는 Reader/Manager/Validator/Facade/Adapter 접미사 규칙.
 - [MapStruct 미채택]: DIP 아키텍처에서 Entity=JPA Entity이므로 별도 매핑 레이어가 적음. 정적 팩토리 메서드(create, mapToResponse, from)로 충분. OAuth2는 과제 범위에서 제외.
 
