@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class InventoryService {
+
+    private static final int MAX_DATE_RANGE_DAYS = 30;
 
     private final RoomTypeReader roomTypeReader;
     private final PropertyReader propertyReader;
@@ -42,10 +46,9 @@ public class InventoryService {
         validateOwnership(roomTypeId, partnerId);
         validateDateRange(command.startDate(), command.endDate());
 
-        final List<Inventory> inventories = upsertInventories(roomTypeId, command);
-        inventoryManager.saveAll(inventories);
+        final int appliedCount = upsertInventories(roomTypeId, command);
 
-        return buildBulkSetResult(roomTypeId, inventories.size(), command);
+        return buildBulkSetResult(roomTypeId, appliedCount, command);
     }
 
     private void validateOwnership(final Long roomTypeId, final Long partnerId) {
@@ -55,19 +58,26 @@ public class InventoryService {
         property.validateOwner(partnerId);
     }
 
-    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
-        }
-    }
-
-    private List<Inventory> upsertInventories(final Long roomTypeId, final InventoryBulkSetCommand command) {
+    private int upsertInventories(final Long roomTypeId, final InventoryBulkSetCommand command) {
         final List<LocalDate> dates = generateDates(command.startDate(), command.endDate());
         final Map<LocalDate, Inventory> existing = loadExistingInventories(roomTypeId, command.startDate(), command.endDate());
 
-        return dates.stream()
-            .map(date -> upsertSingle(roomTypeId, date, command.totalCount(), existing))
-            .toList();
+        final List<Inventory> newInventories = new ArrayList<>();
+
+        for (LocalDate date : dates) {
+            final Inventory inventory = existing.get(date);
+            if (inventory != null) {
+                inventory.updateTotalCount(command.totalCount());
+            } else {
+                newInventories.add(Inventory.create(roomTypeId, date, command.totalCount()));
+            }
+        }
+
+        if (!newInventories.isEmpty()) {
+            inventoryManager.saveAll(newInventories);
+        }
+
+        return dates.size();
     }
 
     /**
@@ -81,6 +91,7 @@ public class InventoryService {
         final LocalDate endDate
     ) {
         validateOwnership(roomTypeId, partnerId);
+        validateDateRange(startDate, endDate);
 
         final List<Inventory> inventories = inventoryReader.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
 
@@ -97,18 +108,14 @@ public class InventoryService {
             .collect(Collectors.toMap(Inventory::getDate, i -> i));
     }
 
-    private Inventory upsertSingle(
-        final Long roomTypeId,
-        final LocalDate date,
-        final int totalCount,
-        final Map<LocalDate, Inventory> existing
-    ) {
-        final Inventory inventory = existing.get(date);
-        if (inventory != null) {
-            inventory.updateTotalCount(totalCount);
-            return inventory;
+    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
         }
-        return Inventory.create(roomTypeId, date, totalCount);
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (days > MAX_DATE_RANGE_DAYS) {
+            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
+        }
     }
 
     private InventoryBulkSetResult buildBulkSetResult(
