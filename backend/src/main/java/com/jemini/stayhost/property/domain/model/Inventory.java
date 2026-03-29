@@ -62,6 +62,9 @@ public class Inventory extends BaseEntity {
   }
 
   public void updateTotalCount(final int totalCount) {
+    if (totalCount < this.reservedCount) {
+      throw new BusinessException(ErrorCode.INVENTORY_TOTAL_BELOW_RESERVED);
+    }
     this.totalCount = totalCount;
   }
 }
