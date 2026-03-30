@@ -49,8 +49,7 @@ CREATE TABLE property_image (
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (id),
-    INDEX idx_property_image_property_id (property_id),
-    CONSTRAINT fk_property_image_property FOREIGN KEY (property_id) REFERENCES property (id)
+    INDEX idx_property_image_property_id (property_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='숙소 이미지';
 
 CREATE TABLE room_type (
@@ -66,8 +65,7 @@ CREATE TABLE room_type (
     created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (id),
-    INDEX idx_room_type_property_id (property_id),
-    CONSTRAINT fk_room_type_property FOREIGN KEY (property_id) REFERENCES property (id)
+    INDEX idx_room_type_property_id (property_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='객실 유형';
 
 CREATE TABLE rate (
@@ -78,8 +76,7 @@ CREATE TABLE rate (
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_rate_room_type_date (room_type_id, date),
-    CONSTRAINT fk_rate_room_type FOREIGN KEY (room_type_id) REFERENCES room_type (id)
+    UNIQUE KEY uk_rate_room_type_date (room_type_id, date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='일별 요금';
 
 CREATE TABLE inventory (
@@ -91,8 +88,7 @@ CREATE TABLE inventory (
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_inventory_room_type_date (room_type_id, date),
-    CONSTRAINT fk_inventory_room_type FOREIGN KEY (room_type_id) REFERENCES room_type (id)
+    UNIQUE KEY uk_inventory_room_type_date (room_type_id, date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='일별 재고';
 
 -- User Context
@@ -136,10 +132,7 @@ CREATE TABLE reservation (
     INDEX idx_reservation_user_id (user_id),
     INDEX idx_reservation_property_id (property_id),
     INDEX idx_reservation_room_type_id (room_type_id),
-    INDEX idx_reservation_status (status),
-    CONSTRAINT fk_reservation_user FOREIGN KEY (user_id) REFERENCES users (id),
-    CONSTRAINT fk_reservation_property FOREIGN KEY (property_id) REFERENCES property (id),
-    CONSTRAINT fk_reservation_room_type FOREIGN KEY (room_type_id) REFERENCES room_type (id)
+    INDEX idx_reservation_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='예약';
 
 CREATE TABLE reservation_daily_rate (
@@ -150,6 +143,5 @@ CREATE TABLE reservation_daily_rate (
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (id),
-    INDEX idx_reservation_daily_rate_reservation_id (reservation_id),
-    CONSTRAINT fk_reservation_daily_rate_reservation FOREIGN KEY (reservation_id) REFERENCES reservation (id)
+    INDEX idx_reservation_daily_rate_reservation_id (reservation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='예약 일별 요금 내역';
