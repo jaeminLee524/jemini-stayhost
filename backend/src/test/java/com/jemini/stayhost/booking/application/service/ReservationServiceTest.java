@@ -5,6 +5,7 @@ import com.jemini.stayhost.booking.application.dto.CreateReservationCommand;
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
 import com.jemini.stayhost.booking.domain.component.ReservationManager;
 import com.jemini.stayhost.booking.domain.component.ReservationReader;
+import com.jemini.stayhost.booking.domain.event.ReservationCancelledEvent;
 import com.jemini.stayhost.booking.domain.model.Reservation;
 import com.jemini.stayhost.booking.infrastructure.cache.InventoryCache;
 import com.jemini.stayhost.common.exception.AuthorizationException;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -238,6 +240,7 @@ class ReservationServiceTest {
     void 예약_취소_성공() {
         final Reservation reservation = createConfirmedReservation();
         given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationManager.cancel(RESERVATION_ID, "일정 변경")).willReturn(1);
         setupInventoriesForCancel();
 
         final CancelReservationResult result = reservationService.cancelReservation(
@@ -245,14 +248,15 @@ class ReservationServiceTest {
 
         assertThat(result.status()).isEqualTo("CANCELLED");
         assertThat(result.cancelReason()).isEqualTo("일정 변경");
+        verify(reservationManager).cancel(RESERVATION_ID, "일정 변경");
     }
 
     @Test
-    @DisplayName("예약 취소 - 이미 취소된 예약이면 예외")
+    @DisplayName("예약 취소 - 이미 취소된 예약이면 affected rows 0으로 예외")
     void 예약_취소_이미_취소된_예약이면_예외() {
         final Reservation reservation = createConfirmedReservation();
-        reservation.cancel("이전 취소");
         given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationManager.cancel(RESERVATION_ID, "재취소")).willReturn(0);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, USER_ID, "재취소"))
@@ -276,6 +280,7 @@ class ReservationServiceTest {
     void 예약_취소_시_재고_복원_확인() {
         final Reservation reservation = createConfirmedReservation();
         given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationManager.cancel(RESERVATION_ID, "취소")).willReturn(1);
         final Inventory inv1 = Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 10);
         final Inventory inv2 = Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), 10);
         inv1.decreaseStock();
@@ -287,6 +292,47 @@ class ReservationServiceTest {
 
         assertThat(inv1.getReservedCount()).isEqualTo(0);
         assertThat(inv2.getReservedCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("예약 취소 실패 시 재고 복원과 캐시 복원이 호출되지 않는다")
+    void 예약_취소_실패_시_재고_복원_호출되지_않는다() {
+        final Reservation reservation = createConfirmedReservation();
+        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationManager.cancel(RESERVATION_ID, "재취소")).willReturn(0);
+
+        assertThatThrownBy(() -> reservationService.cancelReservation(
+            RESERVATION_ID, USER_ID, "재취소"))
+            .isInstanceOf(BusinessException.class);
+
+        verify(inventoryReader, never()).findByRoomTypeIdAndDateBetween(any(), any(), any());
+        verify(inventoryCache, never()).restore(any(), any());
+    }
+
+    @Test
+    @DisplayName("예약 취소 성공 시 캐시 재고가 복원된다")
+    void 예약_취소_성공_시_캐시_재고가_복원된다() {
+        final Reservation reservation = createConfirmedReservation();
+        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationManager.cancel(RESERVATION_ID, "취소")).willReturn(1);
+        setupInventoriesForCancel();
+
+        reservationService.cancelReservation(RESERVATION_ID, USER_ID, "취소");
+
+        verify(inventoryCache).restore(eq(ROOM_TYPE_ID), any());
+    }
+
+    @Test
+    @DisplayName("예약 취소 성공 시 이벤트가 발행된다")
+    void 예약_취소_성공_시_이벤트가_발행된다() {
+        final Reservation reservation = createConfirmedReservation();
+        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationManager.cancel(RESERVATION_ID, "취소")).willReturn(1);
+        setupInventoriesForCancel();
+
+        reservationService.cancelReservation(RESERVATION_ID, USER_ID, "취소");
+
+        verify(eventPublisher).publishEvent(any(ReservationCancelledEvent.class));
     }
 
     // -- helper methods --

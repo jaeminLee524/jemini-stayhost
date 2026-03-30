@@ -5,4 +5,6 @@ import com.jemini.stayhost.booking.domain.model.Reservation;
 public interface ReservationManager {
 
     Reservation save(Reservation reservation);
+
+    int cancel(Long id, String cancelReason);
 }

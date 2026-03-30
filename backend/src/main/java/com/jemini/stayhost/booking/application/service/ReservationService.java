@@ -198,10 +198,15 @@ public class ReservationService {
     ) {
         final Reservation reservation = reservationReader.getById(reservationId);
         reservation.validateOwner(userId);
+
+        final int affectedRows = reservationManager.cancel(reservationId, cancelReason);
+        if (affectedRows == 0) {
+            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CANCELLED);
+        }
         reservation.cancel(cancelReason);
 
         restoreInventories(reservation);
-        List<LocalDate> stayDates = reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList();
+        final List<LocalDate> stayDates = reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList();
         inventoryCache.restore(reservation.getRoomTypeId(), stayDates);
 
         eventPublisher.publishEvent(ReservationCancelledEvent.create(reservation.getId()));

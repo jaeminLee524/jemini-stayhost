@@ -6,6 +6,8 @@ import com.jemini.stayhost.booking.infrastructure.persistence.ReservationReposit
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Component
 @RequiredArgsConstructor
 public class ReservationManagerImpl implements ReservationManager {
@@ -15,5 +17,10 @@ public class ReservationManagerImpl implements ReservationManager {
     @Override
     public Reservation save(final Reservation reservation) {
         return reservationRepository.save(reservation);
+    }
+
+    @Override
+    public int cancel(final Long id, final String cancelReason) {
+        return reservationRepository.cancelById(id, LocalDateTime.now(), cancelReason);
     }
 }
