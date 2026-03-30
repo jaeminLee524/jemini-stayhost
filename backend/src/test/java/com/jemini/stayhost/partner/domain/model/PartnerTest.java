@@ -46,7 +46,7 @@ class PartnerTest {
 
         partner.update("010-9999-9999", "new@test.com", "신한은행", "111-222-333");
 
-        assertThat(partner.getPhone()).isEqualTo("010-9999-9999");
+        assertThat(partner.getPhone()).isEqualTo("01099999999");
         assertThat(partner.getEmail()).isEqualTo("new@test.com");
         assertThat(partner.getBankName()).isEqualTo("신한은행");
         assertThat(partner.getBankAccount()).isEqualTo("111-222-333");

@@ -151,7 +151,7 @@ class PartnerServiceTest {
             PartnerUpdateCommand.builder().phone("010-9999").email("new@test.com")
                 .bankName("신한").bankAccount("111").build());
 
-        assertThat(partner.getPhone()).isEqualTo("010-9999");
+        assertThat(partner.getPhone()).isEqualTo("0109999");
     }
 
     private Partner createActivePartner() {

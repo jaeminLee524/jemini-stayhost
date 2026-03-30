@@ -63,7 +63,7 @@ public class Partner extends BaseEntity {
         partner.businessName = businessName;
         partner.businessNumber = businessNumber;
         partner.representative = representative;
-        partner.phone = phone;
+        partner.phone = stripHyphen(phone);
         partner.email = email;
         partner.loginId = loginId;
         partner.password = encodedPassword;
@@ -87,10 +87,14 @@ public class Partner extends BaseEntity {
         final String bankName,
         final String bankAccount
     ) {
-        if (phone != null) this.phone = phone;
+        if (phone != null) this.phone = stripHyphen(phone);
         if (email != null) this.email = email;
         if (bankName != null) this.bankName = bankName;
         if (bankAccount != null) this.bankAccount = bankAccount;
+    }
+
+    private static String stripHyphen(final String value) {
+        return value != null ? value.replace("-", "") : null;
     }
 
     public void validateActive() {

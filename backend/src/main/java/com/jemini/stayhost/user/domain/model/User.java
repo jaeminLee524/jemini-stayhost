@@ -43,9 +43,13 @@ public class User extends BaseEntity {
         user.email = email;
         user.password = encodedPassword;
         user.name = name;
-        user.phone = phone;
+        user.phone = stripHyphen(phone);
         user.status = UserStatus.ACTIVE;
         return user;
+    }
+
+    private static String stripHyphen(final String value) {
+        return value != null ? value.replace("-", "") : null;
     }
 
     public void validateActive() {

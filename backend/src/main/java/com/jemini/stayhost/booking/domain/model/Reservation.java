@@ -99,7 +99,7 @@ public class Reservation extends BaseEntity {
         reservation.checkInDate = checkInDate;
         reservation.checkOutDate = checkOutDate;
         reservation.guestName = guestName;
-        reservation.guestPhone = guestPhone;
+        reservation.guestPhone = stripHyphen(guestPhone);
         reservation.guestCount = guestCount;
         reservation.basePrice = totalPrice;
         reservation.discountAmount = BigDecimal.ZERO;
@@ -127,6 +127,10 @@ public class Reservation extends BaseEntity {
 
     public void addDailyRate(final ReservationDailyRate dailyRate) {
         this.dailyRates.add(dailyRate);
+    }
+
+    private static String stripHyphen(final String value) {
+        return value != null ? value.replace("-", "") : null;
     }
 
     private static String generateReservationNumber() {
