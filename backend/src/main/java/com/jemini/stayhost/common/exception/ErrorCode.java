@@ -42,6 +42,10 @@ public enum ErrorCode {
     UNAUTHORIZED("인증이 필요합니다."),
     FORBIDDEN("접근 권한이 없습니다."),
 
+    // Supplier
+    SUPPLIER_NOT_FOUND("공급사를 찾을 수 없습니다."),
+    SUPPLIER_ADAPTER_NOT_FOUND("공급사에 대한 어댑터를 찾을 수 없습니다."),
+
     // System
     INTERNAL_SERVER_ERROR("서버 오류가 발생했습니다.");
 
