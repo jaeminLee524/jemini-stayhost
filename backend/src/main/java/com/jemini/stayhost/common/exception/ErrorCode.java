@@ -46,6 +46,9 @@ public enum ErrorCode {
     SUPPLIER_NOT_FOUND("공급사를 찾을 수 없습니다."),
     SUPPLIER_ADAPTER_NOT_FOUND("공급사에 대한 어댑터를 찾을 수 없습니다."),
 
+    // Channel
+    CHANNEL_ADAPTER_NOT_FOUND("채널에 대한 어댑터를 찾을 수 없습니다."),
+
     // System
     INTERNAL_SERVER_ERROR("서버 오류가 발생했습니다.");
 
