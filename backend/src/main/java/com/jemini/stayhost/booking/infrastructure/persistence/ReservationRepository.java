@@ -19,8 +19,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Modifying
     @Query("""
         UPDATE Reservation r
-        SET r.status = 'CANCELLED', r.cancelledAt = :cancelledAt, r.cancelReason = :cancelReason
-        WHERE r.id = :id AND r.status = 'CONFIRMED'
+        SET r.status = :toStatus, r.cancelledAt = :cancelledAt, r.cancelReason = :cancelReason
+        WHERE r.id = :id AND r.status = :fromStatus
         """)
-    int cancelById(Long id, LocalDateTime cancelledAt, String cancelReason);
+    int updateStatus(Long id, ReservationStatus fromStatus, ReservationStatus toStatus, LocalDateTime cancelledAt, String cancelReason);
 }
