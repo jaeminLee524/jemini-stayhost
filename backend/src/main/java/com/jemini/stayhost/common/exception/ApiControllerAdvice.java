@@ -1,5 +1,7 @@
 package com.jemini.stayhost.common.exception;
 
+import static java.util.stream.Collectors.joining;
+
 import com.jemini.stayhost.common.response.ApiBaseResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +11,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ApiControllerAdvice {
@@ -49,7 +50,7 @@ public class ApiControllerAdvice {
     public ResponseEntity<ApiBaseResponse<?>> handleValidation(final MethodArgumentNotValidException e) {
         final String message = e.getBindingResult().getFieldErrors().stream()
             .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-            .collect(Collectors.joining(", "));
+            .collect(joining(", "));
         log.info("[VALIDATION_ERROR] {}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ApiBaseResponse.error(ErrorCode.VALIDATION_ERROR, message));
