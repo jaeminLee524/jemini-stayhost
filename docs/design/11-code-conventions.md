@@ -983,7 +983,7 @@ public ReservationResult create(CreateReservationCommand cmd) {
 
 | 용도 | 메서드명 | 설명 |
 |------|----------|------|
-| 객체 생성 | `create` | 도메인 객체 생성 (내부에서 builder 사용) |
+| 객체 생성 | `create` | 도메인 객체 생성 (Entity, record 모두 builder 사용) |
 | 간단한 래퍼 | `of` | 값 객체, 래퍼 타입 생성 (`UserId.of(1L)`) |
 | Result → Response 변환 | `mapToResponse` | Service Result를 API Response로 변환 |
 | Entity → Result 변환 | `from` | Entity에서 Result 생성 |
@@ -1007,6 +1007,18 @@ public class Reservation {
             .status(ReservationStatus.CONFIRMED)
             .confirmedAt(LocalDateTime.now())
             .totalPrice(totalPrice)
+            .build();
+    }
+}
+
+// Good — record도 @Builder + 정적 팩토리 메서드 내부에서 builder 사용
+@Builder
+public record ReservationCreatedEvent(
+    Long reservationId
+) {
+    public static ReservationCreatedEvent create(final Long reservationId) {
+        return ReservationCreatedEvent.builder()
+            .reservationId(reservationId)
             .build();
     }
 }
