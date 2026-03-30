@@ -1,5 +1,9 @@
 package com.jemini.stayhost.property.application.service;
 
+import static com.jemini.stayhost.common.util.DateUtil.dateRangeInclusive;
+import static com.jemini.stayhost.common.util.DateUtil.dayCountInclusive;
+import static java.util.stream.Collectors.toMap;
+
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.property.application.dto.RateBulkSetCommand;
@@ -20,10 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -86,7 +88,7 @@ public class RateService {
         if (startDate.isAfter(endDate)) {
             throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
         }
-        final long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        final long days = dayCountInclusive(startDate, endDate);
         if (days > MAX_DATE_RANGE_DAYS) {
             throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
         }
@@ -101,6 +103,16 @@ public class RateService {
                 .toList();
     }
 
+    private List<LocalDate> generateDates(
+            final LocalDate startDate,
+            final LocalDate endDate,
+            final List<Integer> daysOfWeek
+    ) {
+        return dateRangeInclusive(startDate, endDate).stream()
+                .filter(date -> daysOfWeek == null || daysOfWeek.isEmpty() || daysOfWeek.contains(date.getDayOfWeek().getValue()))
+                .toList();
+    }
+
     private Map<LocalDate, Rate> loadExistingRates(
             final Long roomTypeId,
             final LocalDate startDate,
@@ -108,7 +120,7 @@ public class RateService {
     ) {
         return rateReader.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate)
                 .stream()
-                .collect(Collectors.toMap(Rate::getDate, r -> r));
+                .collect(toMap(Rate::getDate, r -> r));
     }
 
     private Rate upsertSingle(
@@ -137,15 +149,5 @@ public class RateService {
                 .endDate(command.endDate())
                 .price(command.price())
                 .build();
-    }
-
-    private List<LocalDate> generateDates(
-            final LocalDate startDate,
-            final LocalDate endDate,
-            final List<Integer> daysOfWeek
-    ) {
-        return startDate.datesUntil(endDate.plusDays(1))
-                .filter(date -> daysOfWeek == null || daysOfWeek.isEmpty() || daysOfWeek.contains(date.getDayOfWeek().getValue()))
-                .toList();
     }
 }

@@ -1,5 +1,6 @@
 package com.jemini.stayhost.property.application.service;
 
+import static com.jemini.stayhost.common.util.DateUtil.dateRangeInclusive;
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.property.application.dto.InventoryBulkSetCommand;
@@ -18,8 +19,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.jemini.stayhost.common.util.DateUtil;
+
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,39 +53,10 @@ public class InventoryService {
 
         final int appliedCount = upsertInventories(roomTypeId, command);
 
-        final List<LocalDate> affectedDates = generateDates(command.startDate(), command.endDate());
+        final List<LocalDate> affectedDates = dateRangeInclusive(command.startDate(), command.endDate());
         eventPublisher.publishEvent(InventoryChangedEvent.create(roomTypeId, affectedDates));
 
         return buildBulkSetResult(roomTypeId, appliedCount, command);
-    }
-
-    private void validateOwnership(final Long roomTypeId, final Long partnerId) {
-        final RoomType roomType = roomTypeReader.getById(roomTypeId);
-        final Property property = propertyReader.getById(roomType.getPropertyId());
-
-        property.validateOwner(partnerId);
-    }
-
-    private int upsertInventories(final Long roomTypeId, final InventoryBulkSetCommand command) {
-        final List<LocalDate> dates = generateDates(command.startDate(), command.endDate());
-        final Map<LocalDate, Inventory> existing = loadExistingInventories(roomTypeId, command.startDate(), command.endDate());
-
-        final List<Inventory> newInventories = new ArrayList<>();
-
-        for (LocalDate date : dates) {
-            final Inventory inventory = existing.get(date);
-            if (inventory != null) {
-                inventory.updateTotalCount(command.totalCount());
-            } else {
-                newInventories.add(Inventory.create(roomTypeId, date, command.totalCount()));
-            }
-        }
-
-        if (!newInventories.isEmpty()) {
-            inventoryManager.saveAll(newInventories);
-        }
-
-        return dates.size();
     }
 
     /**
@@ -104,6 +77,45 @@ public class InventoryService {
         return InventoryListResult.of(roomTypeId, inventories);
     }
 
+    private void validateOwnership(final Long roomTypeId, final Long partnerId) {
+        final RoomType roomType = roomTypeReader.getById(roomTypeId);
+        final Property property = propertyReader.getById(roomType.getPropertyId());
+
+        property.validateOwner(partnerId);
+    }
+
+    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        final long days = DateUtil.dayCountInclusive(startDate, endDate);
+        if (days > MAX_DATE_RANGE_DAYS) {
+            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
+        }
+    }
+
+    private int upsertInventories(final Long roomTypeId, final InventoryBulkSetCommand command) {
+        final List<LocalDate> dates = dateRangeInclusive(command.startDate(), command.endDate());
+        final Map<LocalDate, Inventory> existing = loadExistingInventories(roomTypeId, command.startDate(), command.endDate());
+
+        final List<Inventory> newInventories = new ArrayList<>();
+
+        for (LocalDate date : dates) {
+            final Inventory inventory = existing.get(date);
+            if (inventory != null) {
+                inventory.updateTotalCount(command.totalCount());
+            } else {
+                newInventories.add(Inventory.create(roomTypeId, date, command.totalCount()));
+            }
+        }
+
+        if (!newInventories.isEmpty()) {
+            inventoryManager.saveAll(newInventories);
+        }
+
+        return dates.size();
+    }
+
     private Map<LocalDate, Inventory> loadExistingInventories(
         final Long roomTypeId,
         final LocalDate startDate,
@@ -112,16 +124,6 @@ public class InventoryService {
         return inventoryReader.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate)
             .stream()
             .collect(Collectors.toMap(Inventory::getDate, i -> i));
-    }
-
-    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
-        }
-        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-        if (days > MAX_DATE_RANGE_DAYS) {
-            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
-        }
     }
 
     private InventoryBulkSetResult buildBulkSetResult(
@@ -136,9 +138,5 @@ public class InventoryService {
             .endDate(command.endDate())
             .totalCount(command.totalCount())
             .build();
-    }
-
-    private List<LocalDate> generateDates(final LocalDate startDate, final LocalDate endDate) {
-        return startDate.datesUntil(endDate.plusDays(1)).toList();
     }
 }

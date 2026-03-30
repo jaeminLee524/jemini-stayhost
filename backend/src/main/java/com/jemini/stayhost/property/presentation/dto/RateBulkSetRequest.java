@@ -1,5 +1,7 @@
 package com.jemini.stayhost.property.presentation.dto;
 
+import static com.jemini.stayhost.common.util.DateUtil.dayCountInclusive;
+
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.property.application.dto.RateBulkSetCommand;
@@ -9,7 +11,6 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Schema(description = "요금 일괄 설정 요청")
@@ -40,10 +41,10 @@ public record RateBulkSetRequest(
     }
 
     private void validateDateRange() {
-        if (startDate.isAfter(endDate)) {
+        if (this.startDate.isAfter(this.endDate)) {
             throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
         }
-        final long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        final long days = dayCountInclusive(this.startDate, this.endDate);
         if (days > MAX_DATE_RANGE_DAYS) {
             throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
         }
