@@ -35,12 +35,6 @@
 - [HTTP 상태 코드 활용]: 항상 200이 아닌, 400/404/409/500 등 적절한 상태 코드 반환. 모니터링(Micrometer)이 상태 코드 기반 에러율 집계
 - [정적 팩토리 메서드 + 내부 builder]: 비즈니스 로직에서 new/builder 직접 사용 금지. 정적 팩토리 메서드 내부에서 builder 사용
 
-### 참고 자료
-- [지속 성장 가능한 소프트웨어를 만들어가는 방법](https://geminikims.medium.com/%EC%A7%80%EC%86%8D-%EC%84%B1%EC%9E%A5-%EA%B0%80%EB%8A%A5%ED%95%9C-%EC%86%8C%ED%94%84%ED%8A%B8%EC%9B%A8%EC%96%B4%EB%A5%BC-%EB%A7%8C%EB%93%A4%EC%96%B4%EA%B0%80%EB%8A%94-%EB%B0%A9%EB%B2%95-97844c5dab63)
-- [당근페이 백엔드 아키텍처가 걸어온 여정](https://medium.com/daangn/%EB%8B%B9%EA%B7%BC%ED%8E%98%EC%9D%B4-%EB%B0%B1%EC%97%94%EB%93%9C-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98%EA%B0%80-%EA%B1%B8%EC%96%B4%EC%98%A8-%EC%97%AC%EC%A0%95-98615d5a6b06)
-- [Booking.com Extranet](https://account.booking.com/sign-in)
-- 기존 프로젝트: MDCLoggingFilter, MdcTaskDecorator, LoggingAop, DevOpenApiConfig 패턴 참고
-
 ---
 
 ## Day 2 (cont.) - 구현 (3/29~30)
