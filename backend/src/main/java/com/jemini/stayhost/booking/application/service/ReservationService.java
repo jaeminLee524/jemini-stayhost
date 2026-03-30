@@ -5,8 +5,11 @@ import com.jemini.stayhost.booking.application.dto.CreateReservationCommand;
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
 import com.jemini.stayhost.booking.domain.component.ReservationManager;
 import com.jemini.stayhost.booking.domain.component.ReservationReader;
+import com.jemini.stayhost.booking.domain.event.ReservationCancelledEvent;
+import com.jemini.stayhost.booking.domain.event.ReservationCreatedEvent;
 import com.jemini.stayhost.booking.domain.model.Reservation;
 import com.jemini.stayhost.booking.domain.model.ReservationDailyRate;
+import com.jemini.stayhost.booking.infrastructure.cache.InventoryCache;
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.common.response.PageResult;
@@ -19,6 +22,7 @@ import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,30 +44,43 @@ public class ReservationService {
     private final RoomTypeReader roomTypeReader;
     private final RateReader rateReader;
     private final InventoryReader inventoryReader;
+    private final InventoryCache inventoryCache;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * 예약 생성. 재고 차감 + 날짜별 요금 스냅샷 저장.
+     * 비관적 락 기반 예약 생성. Facade에서 CAS 1차 필터링 후 호출된다. TOCTOU 방어: 락 획득 후 객실/재고를 재검증한다.
      */
     @Transactional
-    public ReservationResult createReservation(
+    public ReservationResult createWithInventoryLock(
         final Long userId,
         final CreateReservationCommand command
     ) {
-        final Property property = propertyReader.getById(command.propertyId());
+        final List<LocalDate> stayDates = generateStayDates(command.checkInDate(), command.checkOutDate());
+        final LocalDate lastStayDate = stayDates.getLast();
+
+        // 비관적 락으로 재고 행 잠금 (ORDER BY room_type_id, date 보장)
+        final List<Inventory> inventories = inventoryReader.findAndLockByRoomTypeIdAndDateRange(command.roomTypeId(), command.checkInDate(), lastStayDate);
+
+        // TOCTOU 방어적 재검증
         final RoomType roomType = roomTypeReader.getById(command.roomTypeId());
         roomType.validateGuestCount(command.guestCount());
+        validateInventorySufficient(stayDates, inventories);
 
-        final List<LocalDate> stayDates = generateStayDates(command.checkInDate(), command.checkOutDate());
-        decreaseInventories(command.roomTypeId(), stayDates);
+        // 재고 차감
+        inventories.forEach(Inventory::decreaseStock);
+
+        // 요금 로드 + 예약 생성
         final Map<LocalDate, BigDecimal> dailyPrices = loadDailyPrices(command.roomTypeId(), stayDates, roomType.getBasePrice());
-
+        final Property property = propertyReader.getById(command.propertyId());
         final Reservation reservation = createAndSaveReservation(userId, command, calculateTotalPrice(dailyPrices));
         saveDailyRates(reservation, dailyPrices);
+
+        eventPublisher.publishEvent(ReservationCreatedEvent.create(reservation.getId()));
 
         return toResult(reservation, property, roomType);
     }
 
-    // -- createReservation private methods --
+    // -- createWithInventoryLock private methods --
 
     private List<LocalDate> generateStayDates(final LocalDate checkIn, final LocalDate checkOut) {
         if (!checkIn.isBefore(checkOut)) {
@@ -72,23 +89,19 @@ public class ReservationService {
         return checkIn.datesUntil(checkOut).toList();
     }
 
-    private void decreaseInventories(final Long roomTypeId, final List<LocalDate> stayDates) {
-        final Map<LocalDate, Inventory> inventoryMap = loadInventoryMap(roomTypeId, stayDates);
+    private void validateInventorySufficient(
+        final List<LocalDate> stayDates,
+        final List<Inventory> inventories
+    ) {
+        final Map<LocalDate, Inventory> inventoryMap = inventories.stream()
+            .collect(Collectors.toMap(Inventory::getDate, i -> i));
 
         for (final LocalDate date : stayDates) {
             final Inventory inventory = inventoryMap.get(date);
-            if (inventory == null) {
-                throw new BusinessException(ErrorCode.INVENTORY_NOT_AVAILABLE);
+            if (inventory == null || inventory.getAvailableCount() <= 0) {
+                throw new BusinessException(ErrorCode.INVENTORY_INSUFFICIENT);
             }
-            inventory.decreaseStock();
         }
-    }
-
-    private Map<LocalDate, Inventory> loadInventoryMap(final Long roomTypeId, final List<LocalDate> stayDates) {
-        return inventoryReader
-            .findByRoomTypeIdAndDateBetween(roomTypeId, stayDates.getFirst(), stayDates.getLast())
-            .stream()
-            .collect(Collectors.toMap(Inventory::getDate, i -> i));
     }
 
     private Map<LocalDate, BigDecimal> loadDailyPrices(
@@ -195,6 +208,10 @@ public class ReservationService {
         reservation.cancel(cancelReason);
 
         restoreInventories(reservation);
+        inventoryCache.restore(reservation.getRoomTypeId(),
+            reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList());
+
+        eventPublisher.publishEvent(ReservationCancelledEvent.create(reservation.getId()));
 
         return CancelReservationResult.from(reservation);
     }

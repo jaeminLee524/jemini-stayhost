@@ -6,6 +6,7 @@ import com.jemini.stayhost.booking.application.dto.ReservationResult;
 import com.jemini.stayhost.booking.domain.component.ReservationManager;
 import com.jemini.stayhost.booking.domain.component.ReservationReader;
 import com.jemini.stayhost.booking.domain.model.Reservation;
+import com.jemini.stayhost.booking.infrastructure.cache.InventoryCache;
 import com.jemini.stayhost.common.exception.AuthorizationException;
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -61,6 +63,12 @@ class ReservationServiceTest {
     @Mock
     private InventoryReader inventoryReader;
 
+    @Mock
+    private InventoryCache inventoryCache;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private static final Long USER_ID = 1L;
     private static final Long PROPERTY_ID = 100L;
     private static final Long ROOM_TYPE_ID = 200L;
@@ -78,7 +86,7 @@ class ReservationServiceTest {
         given(reservationManager.save(any(Reservation.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
 
-        final ReservationResult result = reservationService.createReservation(USER_ID, createCommand());
+        final ReservationResult result = reservationService.createWithInventoryLock(USER_ID, createCommand());
 
         assertThat(result.status()).isEqualTo("CONFIRMED");
         assertThat(result.propertyName()).isEqualTo("테스트 호텔");
@@ -89,9 +97,14 @@ class ReservationServiceTest {
     @Test
     @DisplayName("예약 생성 - 투숙인원 초과이면 예외")
     void 예약_생성_투숙인원_초과이면_예외() {
-        setupPropertyAndRoomType();
+        given(inventoryReader.findAndLockByRoomTypeIdAndDateRange(eq(ROOM_TYPE_ID), any(), any()))
+            .willReturn(List.of(
+                Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 10),
+                Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), 10)));
+        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(
+            RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10));
 
-        assertThatThrownBy(() -> reservationService.createReservation(USER_ID,
+        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID,
             CreateReservationCommand.builder()
                 .propertyId(PROPERTY_ID).roomTypeId(ROOM_TYPE_ID)
                 .checkInDate(LocalDate.of(2026, 4, 10)).checkOutDate(LocalDate.of(2026, 4, 12))
@@ -103,9 +116,7 @@ class ReservationServiceTest {
     @Test
     @DisplayName("예약 생성 - 체크아웃이 체크인 이전이면 예외")
     void 예약_생성_체크아웃이_체크인_이전이면_예외() {
-        setupPropertyAndRoomType();
-
-        assertThatThrownBy(() -> reservationService.createReservation(USER_ID,
+        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID,
             CreateReservationCommand.builder()
                 .propertyId(PROPERTY_ID).roomTypeId(ROOM_TYPE_ID)
                 .checkInDate(LocalDate.of(2026, 4, 12)).checkOutDate(LocalDate.of(2026, 4, 10))
@@ -117,22 +128,24 @@ class ReservationServiceTest {
     @Test
     @DisplayName("예약 생성 - 재고 정보 없으면 예외")
     void 예약_생성_재고_정보_없으면_예외() {
-        setupPropertyAndRoomType();
-        given(inventoryReader.findByRoomTypeIdAndDateBetween(eq(ROOM_TYPE_ID), any(), any()))
+        given(inventoryReader.findAndLockByRoomTypeIdAndDateRange(eq(ROOM_TYPE_ID), any(), any()))
             .willReturn(List.of());
+        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(
+            RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10));
 
-        assertThatThrownBy(() -> reservationService.createReservation(USER_ID, createCommand()))
+        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID, createCommand()))
             .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVENTORY_NOT_AVAILABLE);
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVENTORY_INSUFFICIENT);
     }
 
     @Test
     @DisplayName("예약 생성 - 재고 부족이면 예외")
     void 예약_생성_재고_부족이면_예외() {
-        setupPropertyAndRoomType();
         setupInventories(0);
+        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(
+            RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10));
 
-        assertThatThrownBy(() -> reservationService.createReservation(USER_ID, createCommand()))
+        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID, createCommand()))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVENTORY_INSUFFICIENT);
     }
@@ -147,7 +160,7 @@ class ReservationServiceTest {
         given(reservationManager.save(any(Reservation.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
 
-        final ReservationResult result = reservationService.createReservation(USER_ID, createCommand());
+        final ReservationResult result = reservationService.createWithInventoryLock(USER_ID, createCommand());
 
         // 4/10: 150000 (특가), 4/11: 120000 (basePrice) = 270000
         assertThat(result.finalPrice()).isEqualByComparingTo(BigDecimal.valueOf(270000));
@@ -300,7 +313,7 @@ class ReservationServiceTest {
     }
 
     private void setupInventories(final int totalCount) {
-        given(inventoryReader.findByRoomTypeIdAndDateBetween(eq(ROOM_TYPE_ID), any(), any()))
+        given(inventoryReader.findAndLockByRoomTypeIdAndDateRange(eq(ROOM_TYPE_ID), any(), any()))
             .willReturn(List.of(
                 Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), totalCount),
                 Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), totalCount)));

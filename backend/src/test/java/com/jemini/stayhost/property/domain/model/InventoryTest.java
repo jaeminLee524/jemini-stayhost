@@ -28,6 +28,7 @@ class InventoryTest {
         inventory.decreaseStock();
         inventory.decreaseStock();
 
+        assertThat(inventory.getTotalCount()).isEqualTo(10);
         assertThat(inventory.getAvailableCount()).isEqualTo(8);
     }
 
@@ -38,6 +39,7 @@ class InventoryTest {
 
         inventory.decreaseStock();
 
+        assertThat(inventory.getTotalCount()).isEqualTo(10);
         assertThat(inventory.getReservedCount()).isEqualTo(1);
         assertThat(inventory.getAvailableCount()).isEqualTo(9);
     }

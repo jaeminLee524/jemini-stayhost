@@ -2,6 +2,7 @@ package com.jemini.stayhost.booking.presentation.controller;
 
 import com.jemini.stayhost.booking.application.dto.CancelReservationResult;
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
+import com.jemini.stayhost.booking.application.facade.ReservationFacade;
 import com.jemini.stayhost.booking.application.service.ReservationService;
 import com.jemini.stayhost.booking.presentation.docs.CustomerReservationDocs;
 import com.jemini.stayhost.booking.presentation.dto.*;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class CustomerReservationController implements CustomerReservationDocs {
 
+    private final ReservationFacade reservationFacade;
     private final ReservationService reservationService;
 
     @PostMapping("/api/reservations")
@@ -26,7 +28,7 @@ public class CustomerReservationController implements CustomerReservationDocs {
         final UserId userId,
         @RequestBody @Valid final CreateReservationRequest request
     ) {
-        final ReservationResult result = reservationService.createReservation(userId.value(), request.toCommand());
+        final ReservationResult result = reservationFacade.createReservation(userId.value(), request.toCommand());
 
         return ApiBaseResponse.success(CreateReservationResponse.from(result));
     }

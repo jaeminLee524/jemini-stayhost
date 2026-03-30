@@ -8,4 +8,6 @@ import java.util.List;
 public interface InventoryReader {
 
     List<Inventory> findByRoomTypeIdAndDateBetween(Long roomTypeId, LocalDate startDate, LocalDate endDate);
+
+    List<Inventory> findAndLockByRoomTypeIdAndDateRange(Long roomTypeId, LocalDate checkIn, LocalDate checkOut);
 }
