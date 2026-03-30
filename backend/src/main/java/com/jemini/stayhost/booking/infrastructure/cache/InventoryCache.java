@@ -49,6 +49,9 @@ public class InventoryCache {
             final String key = buildKey(roomTypeId, date);
             final AtomicInteger available = cache.get(key);
 
+            // available == null: 캐시에 키가 없는 경우 (워밍업 범위 밖, 신규 Inventory 등)
+            // DB에는 재고가 존재할 수 있으나, 현재는 보수적으로 차단한다.
+            // 판매 기회 손실을 허용하지 않으려면 null일 때 캐시를 통과시키고 DB 락에서 판단하도록 변경 가능.
             if (available == null || !tryDecrease(available)) {
                 rollbackDecrease(roomTypeId, dates, decreasedCount);
                 throw new BusinessException(ErrorCode.INVENTORY_INSUFFICIENT);
