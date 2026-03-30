@@ -1,5 +1,6 @@
 package com.jemini.stayhost.booking.application.service;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.jemini.stayhost.booking.application.dto.CancelReservationResult;
 import com.jemini.stayhost.booking.application.dto.CreateReservationCommand;
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
@@ -22,6 +23,7 @@ import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,20 +50,22 @@ public class ReservationService {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * 비관적 락 기반 예약 생성. Facade에서 CAS 1차 필터링 후 호출된다. TOCTOU 방어: 락 획득 후 객실/재고를 재검증한다.
+     * 비관적 락 기반 예약 생성.
+     * <p> Facade에서 CAS 1차 필터링 후 호출된다.
+     * <p> TOCTOU 방어: 락 획득 후 객실/재고를 재검증한다.
      */
     @Transactional
     public ReservationResult createWithInventoryLock(
         final Long userId,
         final CreateReservationCommand command
     ) {
-        final List<LocalDate> stayDates = generateStayDates(command.checkInDate(), command.checkOutDate());
+        final List<LocalDate> stayDates = command.generateStayDates();
         final LocalDate lastStayDate = stayDates.getLast();
 
         // 비관적 락으로 재고 행 잠금 (ORDER BY room_type_id, date 보장)
         final List<Inventory> inventories = inventoryReader.findAndLockByRoomTypeIdAndDateRange(command.roomTypeId(), command.checkInDate(), lastStayDate);
 
-        // TOCTOU 방어적 재검증
+        // TOCTOU 방어적 재검증(캐시와 DB warm up 시점 불일치로 인한 문제 예방을 위해 재검증)
         final RoomType roomType = roomTypeReader.getById(command.roomTypeId());
         roomType.validateGuestCount(command.guestCount());
         validateInventorySufficient(stayDates, inventories);
@@ -78,15 +82,6 @@ public class ReservationService {
         eventPublisher.publishEvent(ReservationCreatedEvent.create(reservation.getId()));
 
         return toResult(reservation, property, roomType);
-    }
-
-    // -- createWithInventoryLock private methods --
-
-    private List<LocalDate> generateStayDates(final LocalDate checkIn, final LocalDate checkOut) {
-        if (!checkIn.isBefore(checkOut)) {
-            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
-        }
-        return checkIn.datesUntil(checkOut).toList();
     }
 
     private void validateInventorySufficient(
@@ -109,9 +104,7 @@ public class ReservationService {
         final List<LocalDate> stayDates,
         final BigDecimal basePrice
     ) {
-        final Map<LocalDate, BigDecimal> rateMap = rateReader
-            .findByRoomTypeIdAndDateBetween(roomTypeId, stayDates.getFirst(), stayDates.getLast())
-            .stream()
+        final Map<LocalDate, BigDecimal> rateMap = rateReader.findByRoomTypeIdAndDateBetween(roomTypeId, stayDates.getFirst(), stayDates.getLast()).stream()
             .collect(Collectors.toMap(Rate::getDate, Rate::getPrice));
 
         return stayDates.stream()
@@ -164,7 +157,7 @@ public class ReservationService {
         final String status,
         final Pageable pageable
     ) {
-        final Page<Reservation> page = (status != null && !status.isBlank())
+        final Page<Reservation> page = isNotBlank(status)
             ? reservationReader.findByUserIdAndStatus(userId, status, pageable)
             : reservationReader.findByUserId(userId, pageable);
 
@@ -208,8 +201,8 @@ public class ReservationService {
         reservation.cancel(cancelReason);
 
         restoreInventories(reservation);
-        inventoryCache.restore(reservation.getRoomTypeId(),
-            reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList());
+        List<LocalDate> stayDates = reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList();
+        inventoryCache.restore(reservation.getRoomTypeId(), stayDates);
 
         eventPublisher.publishEvent(ReservationCancelledEvent.create(reservation.getId()));
 
@@ -219,12 +212,8 @@ public class ReservationService {
     // -- cancelReservation private methods --
 
     private void restoreInventories(final Reservation reservation) {
-        final List<LocalDate> stayDates = reservation.getCheckInDate()
-            .datesUntil(reservation.getCheckOutDate()).toList();
-        final Map<LocalDate, Inventory> inventoryMap = inventoryReader
-            .findByRoomTypeIdAndDateBetween(
-                reservation.getRoomTypeId(), stayDates.getFirst(), stayDates.getLast())
-            .stream()
+        final List<LocalDate> stayDates = reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList();
+        final Map<LocalDate, Inventory> inventoryMap = inventoryReader.findByRoomTypeIdAndDateBetween(reservation.getRoomTypeId(), stayDates.getFirst(), stayDates.getLast()).stream()
             .collect(Collectors.toMap(Inventory::getDate, i -> i));
 
         for (final LocalDate date : stayDates) {
@@ -242,8 +231,14 @@ public class ReservationService {
         final Property property,
         final RoomType roomType
     ) {
-        return ReservationResult.from(reservation, property.getName(), property.getAddress(),
-            roomType.getName(), property.getThumbnailUrl(),
-            property.getCheckInTime(), property.getCheckOutTime());
+        return ReservationResult.from(
+            reservation,
+            property.getName(),
+            property.getAddress(),
+            roomType.getName(),
+            property.getThumbnailUrl(),
+            property.getCheckInTime(),
+            property.getCheckOutTime()
+        );
     }
 }
