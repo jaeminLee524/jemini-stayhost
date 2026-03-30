@@ -46,6 +46,18 @@ public class RoomTypeService {
         return RoomTypeResult.from(saved);
     }
 
+    private RoomType buildRoomType(final Long propertyId, final RoomTypeCreateCommand command) {
+        return RoomType.create(
+            propertyId,
+            command.name(),
+            command.description(),
+            command.maxOccupancy(),
+            command.basePrice(),
+            toJson(command.amenities()),
+            command.totalRoomCount()
+        );
+    }
+
     /**
      * 숙소의 객실 유형 목록 조회. 소유권을 검증한다.
      */
@@ -81,18 +93,6 @@ public class RoomTypeService {
     private void validateRoomTypeOwner(final RoomType roomType, final Long partnerId) {
         final Property property = propertyReader.getById(roomType.getPropertyId());
         property.validateOwner(partnerId);
-    }
-
-    private RoomType buildRoomType(final Long propertyId, final RoomTypeCreateCommand command) {
-        return RoomType.create(
-            propertyId,
-            command.name(),
-            command.description(),
-            command.maxOccupancy(),
-            command.basePrice(),
-            toJson(command.amenities()),
-            command.totalRoomCount()
-        );
     }
 
     private String toJson(final List<String> amenities) {

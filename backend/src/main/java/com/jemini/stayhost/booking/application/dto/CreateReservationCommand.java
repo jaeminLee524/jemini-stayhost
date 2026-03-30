@@ -19,10 +19,10 @@ public record CreateReservationCommand(
 ) {
 
     public List<LocalDate> generateStayDates() {
-        if (!this.checkInDate.isBefore(checkOutDate)) {
+        if (!this.checkInDate.isBefore(this.checkOutDate)) {
             throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
         }
 
-        return checkInDate.datesUntil(checkOutDate).toList();
+        return this.checkInDate.datesUntil(this.checkOutDate).toList();
     }
 }

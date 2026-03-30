@@ -1,6 +1,8 @@
 package com.jemini.stayhost.booking.application.service;
 
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import com.jemini.stayhost.booking.application.dto.CancelReservationResult;
 import com.jemini.stayhost.booking.application.dto.CreateReservationCommand;
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
@@ -23,7 +25,6 @@ import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,7 +35,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -89,7 +89,7 @@ public class ReservationService {
         final List<Inventory> inventories
     ) {
         final Map<LocalDate, Inventory> inventoryMap = inventories.stream()
-            .collect(Collectors.toMap(Inventory::getDate, i -> i));
+            .collect(toMap(Inventory::getDate, i -> i));
 
         for (final LocalDate date : stayDates) {
             final Inventory inventory = inventoryMap.get(date);
@@ -105,10 +105,10 @@ public class ReservationService {
         final BigDecimal basePrice
     ) {
         final Map<LocalDate, BigDecimal> rateMap = rateReader.findByRoomTypeIdAndDateBetween(roomTypeId, stayDates.getFirst(), stayDates.getLast()).stream()
-            .collect(Collectors.toMap(Rate::getDate, Rate::getPrice));
+            .collect(toMap(Rate::getDate, Rate::getPrice));
 
         return stayDates.stream()
-            .collect(Collectors.toMap(
+            .collect(toMap(
                 date -> date,
                 date -> rateMap.getOrDefault(date, basePrice)
             ));
@@ -178,15 +178,6 @@ public class ReservationService {
         return toResultFromReservation(reservation);
     }
 
-    // -- getMyReservations/getReservation private methods --
-
-    private ReservationResult toResultFromReservation(final Reservation reservation) {
-        final Property property = propertyReader.getById(reservation.getPropertyId());
-        final RoomType roomType = roomTypeReader.getById(reservation.getRoomTypeId());
-
-        return toResult(reservation, property, roomType);
-    }
-
     /**
      * 예약 취소. 본인 예약만 취소 가능. 재고를 복원한다.
      */
@@ -214,23 +205,6 @@ public class ReservationService {
         return CancelReservationResult.from(reservation);
     }
 
-    // -- cancelReservation private methods --
-
-    private void restoreInventories(final Reservation reservation) {
-        final List<LocalDate> stayDates = reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList();
-        final Map<LocalDate, Inventory> inventoryMap = inventoryReader.findByRoomTypeIdAndDateBetween(reservation.getRoomTypeId(), stayDates.getFirst(), stayDates.getLast()).stream()
-            .collect(Collectors.toMap(Inventory::getDate, i -> i));
-
-        for (final LocalDate date : stayDates) {
-            final Inventory inventory = inventoryMap.get(date);
-            if (inventory != null) {
-                inventory.increaseStock();
-            }
-        }
-    }
-
-    // -- shared private methods --
-
     private ReservationResult toResult(
         final Reservation reservation,
         final Property property,
@@ -245,5 +219,25 @@ public class ReservationService {
             property.getCheckInTime(),
             property.getCheckOutTime()
         );
+    }
+
+    private ReservationResult toResultFromReservation(final Reservation reservation) {
+        final Property property = propertyReader.getById(reservation.getPropertyId());
+        final RoomType roomType = roomTypeReader.getById(reservation.getRoomTypeId());
+
+        return toResult(reservation, property, roomType);
+    }
+
+    private void restoreInventories(final Reservation reservation) {
+        final List<LocalDate> stayDates = reservation.getCheckInDate().datesUntil(reservation.getCheckOutDate()).toList();
+        final Map<LocalDate, Inventory> inventoryMap = inventoryReader.findByRoomTypeIdAndDateBetween(reservation.getRoomTypeId(), stayDates.getFirst(), stayDates.getLast()).stream()
+            .collect(toMap(Inventory::getDate, i -> i));
+
+        for (final LocalDate date : stayDates) {
+            final Inventory inventory = inventoryMap.get(date);
+            if (inventory != null) {
+                inventory.increaseStock();
+            }
+        }
     }
 }

@@ -58,6 +58,7 @@ public class PartnerService {
     @Transactional(readOnly = true)
     public PartnerResult getPartner(final Long partnerId) {
         final Partner partner = partnerReader.getById(partnerId);
+
         return PartnerResult.from(partner);
     }
 

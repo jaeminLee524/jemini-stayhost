@@ -65,8 +65,6 @@ public class UserService {
         return UserResult.from(user);
     }
 
-    // -- signup private methods --
-
     private void validateDuplicateEmail(final String email) {
         if (userReader.existsByEmail(email)) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
@@ -81,8 +79,6 @@ public class UserService {
             command.phone()
         );
     }
-
-    // -- login private methods --
 
     private void validatePassword(final String rawPassword, final String encodedPassword) {
         if (!passwordEncoder.matches(rawPassword, encodedPassword)) {

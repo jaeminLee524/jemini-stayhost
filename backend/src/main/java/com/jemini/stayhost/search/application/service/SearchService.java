@@ -1,5 +1,9 @@
 package com.jemini.stayhost.search.application.service;
 
+import static com.jemini.stayhost.common.util.DateUtil.dayCountInclusive;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
+
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.common.exception.NotFoundException;
@@ -17,13 +21,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,50 +83,34 @@ public class SearchService {
         return buildRateResult(propertyId, roomTypes, ratesByRoomType, inventoryByRoomType, startDate, endDate);
     }
 
-    // -- getRoomTypeRates private methods --
-
-    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
-        }
-        final long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-        if (days > MAX_DATE_RANGE_DAYS) {
-            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
-        }
-    }
-
-    // -- searchProperties private methods --
-
     private Page<Property> findProperties(final String region, final String keyword, final Pageable pageable) {
-        final StringBuilder jpql = new StringBuilder("SELECT p FROM Property p WHERE p.status = :status");
-        final StringBuilder countJpql = new StringBuilder("SELECT COUNT(p) FROM Property p WHERE p.status = :status");
-        final List<Object[]> params = new ArrayList<>();
+        final String jpql = """
+            SELECT p FROM Property p
+            WHERE p.status = :status
+            AND (:region IS NULL OR p.region = :region)
+            AND (:keyword IS NULL OR p.name LIKE :keyword)
+            ORDER BY p.name ASC
+            """;
+        final String countJpql = """
+            SELECT COUNT(p) FROM Property p
+            WHERE p.status = :status
+            AND (:region IS NULL OR p.region = :region)
+            AND (:keyword IS NULL OR p.name LIKE :keyword)
+            """;
 
-        params.add(new Object[]{"status", PropertyStatus.ACTIVE});
+        final String keywordParam = isNotBlank(keyword) ? keyword + "%" : null;
 
-        if (region != null && !region.isBlank()) {
-            jpql.append(" AND p.region = :region");
-            countJpql.append(" AND p.region = :region");
-            params.add(new Object[]{"region", region});
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            jpql.append(" AND p.name LIKE :keyword");
-            countJpql.append(" AND p.name LIKE :keyword");
-            params.add(new Object[]{"keyword", keyword + "%"});
-        }
+        final TypedQuery<Property> query = entityManager.createQuery(jpql, Property.class)
+            .setParameter("status", PropertyStatus.ACTIVE)
+            .setParameter("region", isNotBlank(region) ? region : null)
+            .setParameter("keyword", keywordParam)
+            .setFirstResult((int) pageable.getOffset())
+            .setMaxResults(pageable.getPageSize());
 
-        jpql.append(" ORDER BY p.name ASC");
-
-        final TypedQuery<Property> query = entityManager.createQuery(jpql.toString(), Property.class);
-        final TypedQuery<Long> countQuery = entityManager.createQuery(countJpql.toString(), Long.class);
-
-        for (final Object[] param : params) {
-            query.setParameter((String) param[0], param[1]);
-            countQuery.setParameter((String) param[0], param[1]);
-        }
-
-        query.setFirstResult((int) pageable.getOffset());
-        query.setMaxResults(pageable.getPageSize());
+        final TypedQuery<Long> countQuery = entityManager.createQuery(countJpql, Long.class)
+            .setParameter("status", PropertyStatus.ACTIVE)
+            .setParameter("region", isNotBlank(region) ? region : null)
+            .setParameter("keyword", keywordParam);
 
         return new PageImpl<>(query.getResultList(), pageable, countQuery.getSingleResult());
     }
@@ -148,8 +135,6 @@ public class SearchService {
             .availableRoomTypes(roomTypes.size())
             .build();
     }
-
-    // -- getPropertyDetail private methods --
 
     private Property findActiveProperty(final Long propertyId) {
         return entityManager.createQuery(
@@ -182,26 +167,42 @@ public class SearchService {
             .checkInTime(property.getCheckInTime())
             .checkOutTime(property.getCheckOutTime())
             .thumbnailUrl(property.getThumbnailUrl())
-            .images(property.getImages().stream()
-                .map(img -> PropertyDetailResult.ImageEntry.builder()
-                    .imageUrl(img.getImageUrl())
-                    .sortOrder(img.getSortOrder())
-                    .build())
-                .toList())
-            .roomTypes(roomTypes.stream()
-                .map(rt -> PropertyDetailResult.RoomTypeEntry.builder()
-                    .id(rt.getId())
-                    .name(rt.getName())
-                    .description(rt.getDescription())
-                    .maxOccupancy(rt.getMaxOccupancy())
-                    .basePrice(rt.getBasePrice())
-                    .amenities(rt.getAmenities())
-                    .build())
-                .toList())
+            .images(toImageEntries(property))
+            .roomTypes(toRoomTypeEntries(roomTypes))
             .build();
     }
 
-    // -- getRoomTypeRates private methods --
+    private List<PropertyDetailResult.ImageEntry> toImageEntries(final Property property) {
+        return property.getImages().stream()
+            .map(img -> PropertyDetailResult.ImageEntry.builder()
+                .imageUrl(img.getImageUrl())
+                .sortOrder(img.getSortOrder())
+                .build())
+            .toList();
+    }
+
+    private List<PropertyDetailResult.RoomTypeEntry> toRoomTypeEntries(final List<RoomType> roomTypes) {
+        return roomTypes.stream()
+            .map(rt -> PropertyDetailResult.RoomTypeEntry.builder()
+                .id(rt.getId())
+                .name(rt.getName())
+                .description(rt.getDescription())
+                .maxOccupancy(rt.getMaxOccupancy())
+                .basePrice(rt.getBasePrice())
+                .amenities(rt.getAmenities())
+                .build())
+            .toList();
+    }
+
+    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        final long days = dayCountInclusive(startDate, endDate);
+        if (days > MAX_DATE_RANGE_DAYS) {
+            throw new BusinessException(ErrorCode.DATE_RANGE_TOO_LONG);
+        }
+    }
 
     private Map<Long, List<Rate>> loadRates(final List<Long> roomTypeIds, final LocalDate startDate, final LocalDate endDate) {
         if (roomTypeIds.isEmpty()) return Map.of();
@@ -213,7 +214,7 @@ public class SearchService {
             .setParameter("end", endDate)
             .getResultList()
             .stream()
-            .collect(Collectors.groupingBy(Rate::getRoomTypeId));
+            .collect(groupingBy(Rate::getRoomTypeId));
     }
 
     private Map<Long, List<Inventory>> loadInventories(final List<Long> roomTypeIds, final LocalDate startDate, final LocalDate endDate) {
@@ -226,7 +227,7 @@ public class SearchService {
             .setParameter("end", endDate)
             .getResultList()
             .stream()
-            .collect(Collectors.groupingBy(Inventory::getRoomTypeId));
+            .collect(groupingBy(Inventory::getRoomTypeId));
     }
 
     private RoomTypeRateResult buildRateResult(
@@ -257,12 +258,12 @@ public class SearchService {
         final Map<LocalDate, BigDecimal> rateMap = ratesByRoomType
             .getOrDefault(roomType.getId(), List.of())
             .stream()
-            .collect(Collectors.toMap(Rate::getDate, Rate::getPrice));
+            .collect(toMap(Rate::getDate, Rate::getPrice));
 
         final Map<LocalDate, Inventory> inventoryMap = inventoryByRoomType
             .getOrDefault(roomType.getId(), List.of())
             .stream()
-            .collect(Collectors.toMap(Inventory::getDate, i -> i));
+            .collect(toMap(Inventory::getDate, i -> i));
 
         final List<RoomTypeRateResult.DailyRate> dailyRates = startDate.datesUntil(endDate.plusDays(1))
             .map(date -> {
