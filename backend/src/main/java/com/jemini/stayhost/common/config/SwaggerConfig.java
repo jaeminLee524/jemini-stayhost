@@ -8,11 +8,9 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 import java.util.List;
 
-@Profile({"local", "dev"})
 @Configuration
 public class SwaggerConfig {
 
@@ -58,9 +56,17 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public GroupedOpenApi supplierApi() {
+        return GroupedOpenApi.builder()
+            .group("3-supplier")
+            .pathsToMatch("/api/suppliers/**")
+            .build();
+    }
+
+    @Bean
     public GroupedOpenApi commonApi() {
         return GroupedOpenApi.builder()
-            .group("3-common")
+            .group("4-common")
             .pathsToMatch("/api/public/health", "/actuator/**")
             .build();
     }
