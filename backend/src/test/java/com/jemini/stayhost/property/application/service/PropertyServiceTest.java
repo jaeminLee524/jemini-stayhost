@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -39,6 +40,9 @@ class PropertyServiceTest {
 
     @Mock
     private PropertyManager propertyManager;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private static final Long PARTNER_ID = 1L;
     private static final Long PROPERTY_ID = 100L;

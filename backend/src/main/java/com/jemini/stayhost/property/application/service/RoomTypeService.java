@@ -8,9 +8,11 @@ import com.jemini.stayhost.property.application.dto.RoomTypeUpdateCommand;
 import com.jemini.stayhost.property.domain.component.PropertyReader;
 import com.jemini.stayhost.property.domain.component.RoomTypeManager;
 import com.jemini.stayhost.property.domain.component.RoomTypeReader;
+import com.jemini.stayhost.property.domain.event.RoomTypeUpdatedEvent;
 import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class RoomTypeService {
     private final RoomTypeManager roomTypeManager;
     private final PropertyReader propertyReader;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 객실 유형 등록. 숙소 소유권을 검증한다.
@@ -69,6 +72,8 @@ public class RoomTypeService {
 
         validateRoomTypeOwner(roomType, partnerId);
         roomType.update(command.name(), command.description(), command.maxOccupancy(), command.basePrice(), toJson(command.amenities()));
+
+        eventPublisher.publishEvent(RoomTypeUpdatedEvent.create(roomType.getPropertyId()));
 
         return RoomTypeResult.from(roomType);
     }

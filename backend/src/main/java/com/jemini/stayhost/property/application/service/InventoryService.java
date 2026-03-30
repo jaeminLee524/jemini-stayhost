@@ -9,10 +9,12 @@ import com.jemini.stayhost.property.domain.component.InventoryManager;
 import com.jemini.stayhost.property.domain.component.InventoryReader;
 import com.jemini.stayhost.property.domain.component.PropertyReader;
 import com.jemini.stayhost.property.domain.component.RoomTypeReader;
+import com.jemini.stayhost.property.domain.event.InventoryChangedEvent;
 import com.jemini.stayhost.property.domain.model.Inventory;
 import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class InventoryService {
     private final PropertyReader propertyReader;
     private final InventoryReader inventoryReader;
     private final InventoryManager inventoryManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 날짜 범위 재고 일괄 설정. totalCount < reservedCount인 경우 설정이 거부된다.
@@ -47,6 +50,9 @@ public class InventoryService {
         validateDateRange(command.startDate(), command.endDate());
 
         final int appliedCount = upsertInventories(roomTypeId, command);
+
+        final List<LocalDate> affectedDates = generateDates(command.startDate(), command.endDate());
+        eventPublisher.publishEvent(InventoryChangedEvent.create(roomTypeId, affectedDates));
 
         return buildBulkSetResult(roomTypeId, appliedCount, command);
     }

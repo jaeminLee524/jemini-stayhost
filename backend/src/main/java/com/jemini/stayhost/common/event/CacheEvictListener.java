@@ -1,0 +1,48 @@
+package com.jemini.stayhost.common.event;
+
+import com.jemini.stayhost.property.domain.event.PropertyUpdatedEvent;
+import com.jemini.stayhost.property.domain.event.RateUpdatedEvent;
+import com.jemini.stayhost.property.domain.event.RoomTypeUpdatedEvent;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class CacheEvictListener {
+
+    private final CacheManager cacheManager;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onPropertyUpdated(final PropertyUpdatedEvent event) {
+        evict("property", event.propertyId());
+        log.debug("캐시 무효화: property:{}", event.propertyId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onRoomTypeUpdated(final RoomTypeUpdatedEvent event) {
+        evict("roomTypes", event.propertyId());
+        evict("property", event.propertyId());
+        log.debug("캐시 무효화: roomTypes:{}, property:{}", event.propertyId(), event.propertyId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onRateUpdated(final RateUpdatedEvent event) {
+        event.affectedDates().forEach(date ->
+            evict("rate", event.roomTypeId() + ":" + date)
+        );
+        log.debug("캐시 무효화: rate roomTypeId={}, dates={}", event.roomTypeId(), event.affectedDates().size());
+    }
+
+    private void evict(final String cacheName, final Object key) {
+        final Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.evict(key);
+        }
+    }
+}

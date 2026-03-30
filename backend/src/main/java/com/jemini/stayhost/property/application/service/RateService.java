@@ -9,10 +9,12 @@ import com.jemini.stayhost.property.domain.component.PropertyReader;
 import com.jemini.stayhost.property.domain.component.RateManager;
 import com.jemini.stayhost.property.domain.component.RateReader;
 import com.jemini.stayhost.property.domain.component.RoomTypeReader;
+import com.jemini.stayhost.property.domain.event.RateUpdatedEvent;
 import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class RateService {
     private final PropertyReader propertyReader;
     private final RateReader rateReader;
     private final RateManager rateManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 날짜 범위 요금 일괄 설정. 이미 등록된 날짜는 UPSERT 처리된다.
@@ -48,6 +51,9 @@ public class RateService {
 
         final List<Rate> rates = upsertRates(roomTypeId, command);
         rateManager.saveAll(rates);
+
+        final List<LocalDate> affectedDates = rates.stream().map(Rate::getDate).toList();
+        eventPublisher.publishEvent(RateUpdatedEvent.create(roomTypeId, affectedDates));
 
         return buildBulkSetResult(roomTypeId, rates.size(), command);
     }

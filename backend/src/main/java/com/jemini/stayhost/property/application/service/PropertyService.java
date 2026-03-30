@@ -6,10 +6,12 @@ import com.jemini.stayhost.property.application.dto.PropertyResult;
 import com.jemini.stayhost.property.application.dto.PropertyUpdateCommand;
 import com.jemini.stayhost.property.domain.component.PropertyManager;
 import com.jemini.stayhost.property.domain.component.PropertyReader;
+import com.jemini.stayhost.property.domain.event.PropertyUpdatedEvent;
 import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.PropertyStatus;
 import com.jemini.stayhost.property.domain.model.PropertyType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class PropertyService {
 
   private final PropertyReader propertyReader;
   private final PropertyManager propertyManager;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * 숙소 등록. INACTIVE 상태로 생성된다.
@@ -63,6 +66,8 @@ public class PropertyService {
     property.validateOwner(partnerId);
     property.update(command.name(), command.description(), command.checkInTime(), command.checkOutTime(), command.thumbnailUrl());
 
+    eventPublisher.publishEvent(PropertyUpdatedEvent.create(propertyId));
+
     return PropertyResult.from(property);
   }
 
@@ -75,6 +80,8 @@ public class PropertyService {
 
     property.validateOwner(partnerId);
     property.changeStatus(status);
+
+    eventPublisher.publishEvent(PropertyUpdatedEvent.create(propertyId));
 
     return PropertyResult.from(property);
   }

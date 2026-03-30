@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -45,6 +46,9 @@ class RoomTypeServiceTest {
 
     @Mock
     private ObjectMapper objectMapper;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private static final Long PARTNER_ID = 1L;
     private static final Long PROPERTY_ID = 100L;
