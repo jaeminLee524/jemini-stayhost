@@ -52,12 +52,12 @@ Day 4 — 동시성 + Supplier + 마무리:
 32. 통합 검색에 Supplier 상품 노출 확인
 33. 전체 API Swagger 확인
 
-Day 5 — 테스트 + 마무리:
-34. Testcontainers 동시성 테스트 (100:1, 50:10)
-35. Channel: ChannelAdapter + MockChannelAdapter + CompletableFuture 병렬
-36. 이벤트 연결: ReservationCreatedEvent → ChannelManager
-37. k6 부하 테스트 스크립트
-38. Flyway 시딩 데이터
+Day 5 — Channel + 테스트 + 마무리:
+34. Channel: ChannelAdapter + MockChannelAdapter + CompletableFuture 병렬
+35. 이벤트 연결: ReservationCreatedEvent → ChannelManager
+36. Testcontainers 동시성 테스트 (100:1, 50:10)
+37. Flyway 시딩 데이터
+38. k6 부하 테스트 스크립트
 39. Swagger Docs 인터페이스 분리 (GroupedOpenApi)
 40. README.md 최종
 41. 코드 정리
