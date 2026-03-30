@@ -1,7 +1,17 @@
 spring:
   datasource:
-    url: jdbc:tc:mysql:8.0:///stayhost
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    primary:
+      hikari:
+        jdbc-url: jdbc:tc:mysql:8.0:///stayhost
+        driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+        maximum-pool-size: 5
+        pool-name: test-primary-pool
+    read:
+      hikari:
+        jdbc-url: jdbc:tc:mysql:8.0:///stayhost
+        driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+        maximum-pool-size: 5
+        pool-name: test-read-pool
 
   jpa:
     hibernate:
