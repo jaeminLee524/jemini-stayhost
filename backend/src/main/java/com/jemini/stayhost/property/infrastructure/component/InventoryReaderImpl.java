@@ -25,6 +25,18 @@ public class InventoryReaderImpl implements InventoryReader {
     }
 
     @Override
+    public List<Inventory> findByRoomTypeIdsAndDateBetween(
+            final List<Long> roomTypeIds,
+            final LocalDate startDate,
+            final LocalDate endDate
+    ) {
+        if (roomTypeIds.isEmpty()) {
+            return List.of();
+        }
+        return inventoryRepository.findByRoomTypeIdInAndDateBetween(roomTypeIds, startDate, endDate);
+    }
+
+    @Override
     public List<Inventory> findAndLockByRoomTypeIdAndDateRange(
             final Long roomTypeId,
             final LocalDate checkIn,

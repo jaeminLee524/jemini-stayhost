@@ -23,4 +23,16 @@ public class RateReaderImpl implements RateReader {
     ) {
         return rateRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
     }
+
+    @Override
+    public List<Rate> findByRoomTypeIdsAndDateBetween(
+            final List<Long> roomTypeIds,
+            final LocalDate startDate,
+            final LocalDate endDate
+    ) {
+        if (roomTypeIds.isEmpty()) {
+            return List.of();
+        }
+        return rateRepository.findByRoomTypeIdInAndDateBetween(roomTypeIds, startDate, endDate);
+    }
 }

@@ -16,6 +16,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     List<Inventory> findByDateBetween(LocalDate startDate, LocalDate endDate);
 
+    List<Inventory> findByRoomTypeIdInAndDateBetween(List<Long> roomTypeIds, LocalDate startDate, LocalDate endDate);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT i FROM Inventory i

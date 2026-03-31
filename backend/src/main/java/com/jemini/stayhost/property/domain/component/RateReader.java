@@ -8,4 +8,6 @@ import java.util.List;
 public interface RateReader {
 
     List<Rate> findByRoomTypeIdAndDateBetween(Long roomTypeId, LocalDate startDate, LocalDate endDate);
+
+    List<Rate> findByRoomTypeIdsAndDateBetween(List<Long> roomTypeIds, LocalDate startDate, LocalDate endDate);
 }

@@ -9,4 +9,8 @@ public interface RoomTypeReader {
   RoomType getById(Long id);
 
   List<RoomType> findByPropertyId(Long propertyId);
+
+  List<RoomType> findActiveByPropertyId(Long propertyId);
+
+  List<RoomType> findActiveByPropertyIds(List<Long> propertyIds);
 }

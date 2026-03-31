@@ -4,8 +4,10 @@ import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.common.exception.NotFoundException;
 import com.jemini.stayhost.property.domain.component.RoomTypeReader;
 import com.jemini.stayhost.property.domain.model.RoomType;
+import com.jemini.stayhost.property.domain.model.RoomTypeStatus;
 import com.jemini.stayhost.property.infrastructure.persistence.RoomTypeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,16 +16,30 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomTypeReaderImpl implements RoomTypeReader {
 
-  private final RoomTypeRepository roomTypeRepository;
+    private final RoomTypeRepository roomTypeRepository;
 
-  @Override
-  public RoomType getById(final Long id) {
-    return roomTypeRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException(ErrorCode.ROOM_TYPE_NOT_FOUND));
-  }
+    @Override
+    public RoomType getById(final Long id) {
+        return roomTypeRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.ROOM_TYPE_NOT_FOUND));
+    }
 
-  @Override
-  public List<RoomType> findByPropertyId(final Long propertyId) {
-    return roomTypeRepository.findByPropertyId(propertyId);
-  }
+    @Override
+    public List<RoomType> findByPropertyId(final Long propertyId) {
+        return roomTypeRepository.findByPropertyId(propertyId);
+    }
+
+    @Cacheable(value = "roomTypes", key = "#propertyId")
+    @Override
+    public List<RoomType> findActiveByPropertyId(final Long propertyId) {
+        return roomTypeRepository.findByPropertyIdAndStatus(propertyId, RoomTypeStatus.ACTIVE);
+    }
+
+    @Override
+    public List<RoomType> findActiveByPropertyIds(final List<Long> propertyIds) {
+        if (propertyIds.isEmpty()) {
+            return List.of();
+        }
+        return roomTypeRepository.findByPropertyIdInAndStatus(propertyIds, RoomTypeStatus.ACTIVE);
+    }
 }
