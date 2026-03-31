@@ -156,4 +156,62 @@ class ReservationEdgeCaseIntegrationTest extends IntegrationTestBase {
                 "/api/reservations", entity(body), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
+
+    @Test
+    @Order(7)
+    void 체크아웃이_체크인_이전이면_예약_실패() {
+        final LocalDate checkIn = LocalDate.now().plusDays(9);
+        final LocalDate checkOut = checkIn.minusDays(1);
+
+        final ResponseEntity<String> response = requestCreateReservation(
+                userToken, activeProperty.propertyId(), activeProperty.roomTypeId(), checkIn, checkOut, 2);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        final JsonNode error = getError(response);
+        assertThat(error.get("code").asText()).isEqualTo("INVALID_DATE_RANGE");
+    }
+
+    @Test
+    @Order(8)
+    void 다른_회원의_예약_취소_실패() {
+        final LocalDate checkIn = LocalDate.now().plusDays(9);
+        final LocalDate checkOut = checkIn.plusDays(1);
+
+        // 사용자 1이 예약 생성
+        final ResponseEntity<String> created = requestCreateReservation(
+                userToken, activeProperty.propertyId(), activeProperty.roomTypeId(), checkIn, checkOut, 2);
+        assertThat(created.getStatusCode().is2xxSuccessful()).isTrue();
+        final Long reservationId = getData(created).get("id").asLong();
+
+        // 사용자 2가 취소 시도
+        final ResponseEntity<String> response = requestCancelReservation(user2Token, reservationId, "남의 예약 취소");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        final JsonNode error = getError(response);
+        assertThat(error.get("code").asText()).isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    @Order(9)
+    void 존재하지_않는_예약_조회시_404() {
+        final ResponseEntity<String> response = restTemplate.exchange(
+                "/api/reservations/999999", HttpMethod.GET, authEntity(userToken), String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        final JsonNode error = getError(response);
+        assertThat(error.get("code").asText()).isEqualTo("RESERVATION_NOT_FOUND");
+    }
+
+    @Test
+    @Order(10)
+    void 비활성_숙소의_객실_예약_시도() {
+        final LocalDate checkIn = LocalDate.now().plusDays(10);
+        final LocalDate checkOut = checkIn.plusDays(1);
+
+        // 비활성 숙소(INACTIVE)의 객실에 예약 시도 - 재고는 설정됨
+        final ResponseEntity<String> response = requestCreateReservation(
+                userToken, inactivePropertyId, inactiveRoomTypeId, checkIn, checkOut, 2);
+
+        // 비활성 숙소에 대한 예약은 차단되어야 함
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        final JsonNode error = getError(response);
+        assertThat(error.get("code").asText()).isEqualTo("PROPERTY_NOT_ACTIVE");
+    }
 }

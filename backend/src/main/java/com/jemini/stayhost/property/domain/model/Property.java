@@ -2,6 +2,8 @@ package com.jemini.stayhost.property.domain.model;
 
 import com.jemini.stayhost.common.domain.BaseEntity;
 import com.jemini.stayhost.common.exception.AuthorizationException;
+import com.jemini.stayhost.common.exception.BusinessException;
+import com.jemini.stayhost.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -111,6 +113,12 @@ public class Property extends BaseEntity {
     public void validateOwner(final Long requestingPartnerId) {
         if (!this.partnerId.equals(requestingPartnerId)) {
             throw new AuthorizationException("해당 숙소에 대한 권한이 없습니다.");
+        }
+    }
+
+    public void validateActive() {
+        if (this.status != PropertyStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.PROPERTY_NOT_ACTIVE);
         }
     }
 }

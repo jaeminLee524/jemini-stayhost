@@ -9,6 +9,7 @@ public enum ErrorCode {
 
     // Property
     PROPERTY_NOT_FOUND("숙소를 찾을 수 없습니다."),
+    PROPERTY_NOT_ACTIVE("현재 예약할 수 없는 숙소입니다."),
     ROOM_TYPE_NOT_FOUND("객실 유형을 찾을 수 없습니다."),
 
     // Inventory

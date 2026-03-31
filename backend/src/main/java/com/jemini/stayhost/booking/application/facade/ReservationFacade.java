@@ -4,7 +4,9 @@ import com.jemini.stayhost.booking.application.dto.CreateReservationCommand;
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
 import com.jemini.stayhost.booking.application.service.ReservationService;
 import com.jemini.stayhost.booking.infrastructure.cache.InventoryCache;
+import com.jemini.stayhost.property.domain.component.PropertyReader;
 import com.jemini.stayhost.property.domain.component.RoomTypeReader;
+import com.jemini.stayhost.property.domain.model.Property;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import java.util.List;
 public class ReservationFacade {
 
     private final ReservationService reservationService;
+    private final PropertyReader propertyReader;
     private final RoomTypeReader roomTypeReader;
     private final InventoryCache inventoryCache;
 
@@ -31,10 +34,13 @@ public class ReservationFacade {
         final Long userId,
         final CreateReservationCommand command
     ) {
+        final Property property = propertyReader.getById(command.propertyId());
+        property.validateActive();
+
         final RoomType roomType = roomTypeReader.getById(command.roomTypeId());
         roomType.validateGuestCount(command.guestCount());
 
-        final List<LocalDate> stayDates = command.checkInDate().datesUntil(command.checkOutDate()).toList();
+        final List<LocalDate> stayDates = command.generateStayDates();
 
         inventoryCache.tryDecreaseAll(command.roomTypeId(), stayDates);
 
