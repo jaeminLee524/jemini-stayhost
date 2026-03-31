@@ -2,12 +2,15 @@ package com.jemini.stayhost.channel.application.service;
 
 import com.jemini.stayhost.channel.domain.component.ChannelAdapter;
 import com.jemini.stayhost.channel.domain.component.ChannelMappingReader;
+import com.jemini.stayhost.channel.domain.component.ChannelReader;
 import com.jemini.stayhost.channel.domain.component.ChannelRoomMappingReader;
 import com.jemini.stayhost.channel.domain.component.ChannelSyncLogManager;
 import com.jemini.stayhost.channel.domain.dto.ChannelSyncResult;
 import com.jemini.stayhost.channel.domain.dto.InventoryUpdate;
+import com.jemini.stayhost.channel.domain.model.Channel;
 import com.jemini.stayhost.channel.domain.model.ChannelPropertyMapping;
 import com.jemini.stayhost.channel.domain.model.ChannelRoomMapping;
+import com.jemini.stayhost.channel.domain.model.ChannelSyncLog;
 import com.jemini.stayhost.property.domain.component.InventoryReader;
 import com.jemini.stayhost.property.domain.model.Inventory;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,6 +43,9 @@ class ChannelManagerServiceTest {
 
     @Mock
     private ChannelMappingReader channelMappingReader;
+
+    @Mock
+    private ChannelReader channelReader;
 
     @Mock
     private ChannelRoomMappingReader channelRoomMappingReader;
@@ -61,8 +68,10 @@ class ChannelManagerServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(mockAdapter.getChannelCode()).thenReturn("MOCK");
+        lenient().when(channelReader.getById(CHANNEL_ID)).thenReturn(Channel.create("Mock Channel", "MOCK", null, null));
         channelManagerService = new ChannelManagerService(
-            channelMappingReader, channelRoomMappingReader, channelSyncLogManager,
+            channelMappingReader, channelReader, channelRoomMappingReader, channelSyncLogManager,
             inventoryReader, List.of(mockAdapter), executor
         );
     }
@@ -171,7 +180,7 @@ class ChannelManagerServiceTest {
     @DisplayName("어댑터가 빈 리스트일 때 예외가 전파되지 않는다")
     void 어댑터가_빈_리스트일_때_예외가_전파되지_않는다() {
         final ChannelManagerService emptyAdapterService = new ChannelManagerService(
-            channelMappingReader, channelRoomMappingReader, channelSyncLogManager,
+            channelMappingReader, channelReader, channelRoomMappingReader, channelSyncLogManager,
             inventoryReader, List.of(), executor
         );
         final ChannelPropertyMapping mapping = createMapping(MAPPING_ID, "EXT-PROP-001");
@@ -181,6 +190,42 @@ class ChannelManagerServiceTest {
         assertThatCode(() -> emptyAdapterService.pushInventoryToChannels(
             PROPERTY_ID, ROOM_TYPE_ID, List.of(LocalDate.of(2026, 4, 10))))
             .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("푸시 성공 시 동기화 로그가 저장된다")
+    void 푸시_성공시_동기화_로그가_저장된다() {
+        final ChannelPropertyMapping mapping = createMapping();
+        final ChannelRoomMapping roomMapping = ChannelRoomMapping.create(MAPPING_ID, ROOM_TYPE_ID, "EXT-ROOM-001");
+        final List<LocalDate> dates = List.of(LocalDate.of(2026, 4, 10));
+
+        given(channelMappingReader.findActiveByPropertyId(PROPERTY_ID)).willReturn(List.of(mapping));
+        given(channelRoomMappingReader.findByChannelPropertyMappingId(MAPPING_ID)).willReturn(List.of(roomMapping));
+        given(inventoryReader.findByRoomTypeIdAndDateBetween(eq(ROOM_TYPE_ID), any(), any()))
+            .willReturn(List.of(Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 5)));
+        given(mockAdapter.pushInventory(any(), any())).willReturn(ChannelSyncResult.success("MOCK"));
+
+        channelManagerService.pushInventoryToChannels(PROPERTY_ID, ROOM_TYPE_ID, dates);
+
+        verify(channelSyncLogManager).save(any(ChannelSyncLog.class));
+    }
+
+    @Test
+    @DisplayName("푸시 실패 시 실패 상태의 동기화 로그가 저장된다")
+    void 푸시_실패시_실패_상태의_동기화_로그가_저장된다() {
+        final ChannelPropertyMapping mapping = createMapping();
+        final ChannelRoomMapping roomMapping = ChannelRoomMapping.create(MAPPING_ID, ROOM_TYPE_ID, "EXT-ROOM-001");
+        final List<LocalDate> dates = List.of(LocalDate.of(2026, 4, 10));
+
+        given(channelMappingReader.findActiveByPropertyId(PROPERTY_ID)).willReturn(List.of(mapping));
+        given(channelRoomMappingReader.findByChannelPropertyMappingId(MAPPING_ID)).willReturn(List.of(roomMapping));
+        given(inventoryReader.findByRoomTypeIdAndDateBetween(eq(ROOM_TYPE_ID), any(), any()))
+            .willReturn(List.of(Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 5)));
+        given(mockAdapter.pushInventory(any(), any())).willReturn(ChannelSyncResult.failure("MOCK", "타임아웃", 0));
+
+        channelManagerService.pushInventoryToChannels(PROPERTY_ID, ROOM_TYPE_ID, dates);
+
+        verify(channelSyncLogManager).save(any(ChannelSyncLog.class));
     }
 
     private ChannelPropertyMapping createMapping() {

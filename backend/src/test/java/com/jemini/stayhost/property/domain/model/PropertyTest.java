@@ -1,6 +1,7 @@
 package com.jemini.stayhost.property.domain.model;
 
 import com.jemini.stayhost.common.exception.AuthorizationException;
+import com.jemini.stayhost.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +61,24 @@ class PropertyTest {
 
         assertThatThrownBy(() -> property.validateOwner(999L))
             .isInstanceOf(AuthorizationException.class);
+    }
+
+    @Test
+    @DisplayName("활성 검증 - ACTIVE 상태이면 통과")
+    void 활성_검증_ACTIVE_상태이면_통과() {
+        final Property property = createProperty(1L);
+        property.changeStatus(PropertyStatus.ACTIVE);
+
+        property.validateActive();
+    }
+
+    @Test
+    @DisplayName("활성 검증 - INACTIVE 상태이면 예외")
+    void 활성_검증_INACTIVE_상태이면_예외() {
+        final Property property = createProperty(1L);
+
+        assertThatThrownBy(property::validateActive)
+            .isInstanceOf(BusinessException.class);
     }
 
     private Property createProperty(final Long partnerId) {

@@ -2,14 +2,18 @@ package com.jemini.stayhost.channel.application.service;
 
 import com.jemini.stayhost.channel.domain.component.ChannelAdapter;
 import com.jemini.stayhost.channel.domain.component.ChannelMappingReader;
+import com.jemini.stayhost.channel.domain.component.ChannelReader;
 import com.jemini.stayhost.channel.domain.component.ChannelRoomMappingReader;
 import com.jemini.stayhost.channel.domain.component.ChannelSyncLogManager;
 import com.jemini.stayhost.channel.domain.dto.ChannelSyncResult;
 import com.jemini.stayhost.channel.domain.dto.InventoryUpdate;
+import com.jemini.stayhost.channel.domain.model.Channel;
 import com.jemini.stayhost.channel.domain.model.ChannelPropertyMapping;
 import com.jemini.stayhost.channel.domain.model.ChannelRoomMapping;
 import com.jemini.stayhost.channel.domain.model.ChannelSyncLog;
 import com.jemini.stayhost.channel.domain.model.ChannelSyncType;
+import com.jemini.stayhost.common.exception.BusinessException;
+import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.property.domain.component.InventoryReader;
 import com.jemini.stayhost.property.domain.model.Inventory;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,7 @@ import java.util.concurrent.Executor;
 public class ChannelManagerService {
 
     private final ChannelMappingReader channelMappingReader;
+    private final ChannelReader channelReader;
     private final ChannelRoomMappingReader channelRoomMappingReader;
     private final ChannelSyncLogManager channelSyncLogManager;
     private final InventoryReader inventoryReader;
@@ -44,8 +49,7 @@ public class ChannelManagerService {
         }
 
         final List<CompletableFuture<ChannelSyncResult>> futures = mappings.stream()
-            .map(mapping -> CompletableFuture.supplyAsync(
-                () -> pushInventory(mapping, roomTypeId, affectedDates), channelExecutor))
+            .map(mapping -> CompletableFuture.supplyAsync(() -> pushInventory(mapping, roomTypeId, affectedDates), channelExecutor))
             .toList();
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -61,7 +65,7 @@ public class ChannelManagerService {
         final List<LocalDate> affectedDates
     ) {
         try {
-            final ChannelAdapter adapter = findAdapter(mapping);
+            final ChannelAdapter adapter = findAdapter(mapping.getChannelId());
             final List<InventoryUpdate> updates = buildInventoryUpdates(mapping.getId(), roomTypeId, affectedDates);
             return adapter.pushInventory(mapping, updates);
         } catch (final Exception e) {
@@ -70,10 +74,13 @@ public class ChannelManagerService {
         }
     }
 
-    private ChannelAdapter findAdapter(final ChannelPropertyMapping mapping) {
+    private ChannelAdapter findAdapter(final Long channelId) {
+        final Channel channel = channelReader.getById(channelId);
+
         return adapters.stream()
+            .filter(adapter -> adapter.getChannelCode().equals(channel.getCode()))
             .findFirst()
-            .orElseThrow(() -> new IllegalStateException("등록된 ChannelAdapter가 없습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.CHANNEL_ADAPTER_NOT_FOUND));
     }
 
     private List<InventoryUpdate> buildInventoryUpdates(
@@ -82,6 +89,7 @@ public class ChannelManagerService {
         final List<LocalDate> dates
     ) {
         final List<ChannelRoomMapping> roomMappings = channelRoomMappingReader.findByChannelPropertyMappingId(channelPropertyMappingId);
+
         final String externalRoomId = roomMappings.stream()
             .filter(rm -> rm.getRoomTypeId().equals(roomTypeId))
             .map(ChannelRoomMapping::getExternalRoomId)
@@ -97,5 +105,11 @@ public class ChannelManagerService {
 
     private void logSyncResult(final ChannelSyncResult result, final Long propertyId) {
         log.info("채널 동기화 결과: channel={}, success={}, error={}", result.channelCode(), result.success(), result.errorMessage());
+
+        final ChannelSyncLog syncLog = ChannelSyncLog.createOutbound(null, propertyId, ChannelSyncType.INVENTORY);
+        if (result.isFailure()) {
+            syncLog.markFailed(result.errorMessage());
+        }
+        channelSyncLogManager.save(syncLog);
     }
 }

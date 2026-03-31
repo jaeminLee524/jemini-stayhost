@@ -14,4 +14,8 @@ public record ChannelSyncResult(
     public static ChannelSyncResult failure(final String channelCode, final String errorMessage, final int retryCount) {
         return new ChannelSyncResult(false, channelCode, errorMessage, retryCount);
     }
+
+    public boolean isFailure() {
+        return !success;
+    }
 }
