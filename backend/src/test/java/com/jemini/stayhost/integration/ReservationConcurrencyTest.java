@@ -32,6 +32,7 @@ class ReservationConcurrencyTest extends IntegrationTestBase {
 
     @Test
     @Order(1)
+    @DisplayName("재고 1개에 동시 예약시 1명만 성공")
     void 재고_1개에_동시_예약시_1명만_성공() throws InterruptedException {
         final LocalDate checkIn = LocalDate.now().plusDays(1);
         final LocalDate checkOut = checkIn.plusDays(1);
@@ -88,6 +89,7 @@ class ReservationConcurrencyTest extends IntegrationTestBase {
 
     @Test
     @Order(2)
+    @DisplayName("재고 10개에 동시 예약시 10명만 성공")
     void 재고_10개에_동시_예약시_10명만_성공() throws InterruptedException {
         final LocalDate checkIn = LocalDate.now().plusDays(3);
         final LocalDate checkOut = checkIn.plusDays(1);
@@ -144,6 +146,7 @@ class ReservationConcurrencyTest extends IntegrationTestBase {
 
     @Test
     @Order(3)
+    @DisplayName("동일 예약 동시 취소시 1번만 성공")
     void 동일_예약_동시_취소시_1번만_성공() throws InterruptedException {
         final LocalDate checkIn = LocalDate.now().plusDays(5);
         final LocalDate checkOut = checkIn.plusDays(1);

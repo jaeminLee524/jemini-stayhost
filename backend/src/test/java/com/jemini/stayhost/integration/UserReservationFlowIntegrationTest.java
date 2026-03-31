@@ -33,6 +33,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(1)
+    @DisplayName("회원가입 성공")
     void 회원가입_성공() {
         final Long userId = registerUser(USER_EMAIL, USER_PASSWORD);
         assertThat(userId).isPositive();
@@ -40,6 +41,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(2)
+    @DisplayName("로그인 성공")
     void 로그인_성공() {
         userToken = loginUser(USER_EMAIL, USER_PASSWORD);
         assertThat(userToken).isNotBlank();
@@ -47,6 +49,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(3)
+    @DisplayName("숙소 검색 성공")
     void 숙소_검색_성공() {
         final ResponseEntity<String> response = restTemplate.getForEntity(
                 "/api/public/search/properties?region=서울", String.class);
@@ -58,6 +61,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(4)
+    @DisplayName("숙소 상세 조회 성공")
     void 숙소_상세_조회_성공() {
         final ResponseEntity<String> response = restTemplate.getForEntity(
                 "/api/public/properties/" + propertyData.propertyId(), String.class);
@@ -70,6 +74,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(5)
+    @DisplayName("요금 조회 성공")
     void 요금_조회_성공() {
         final ResponseEntity<String> response = restTemplate.getForEntity(
                 "/api/public/search/properties/" + propertyData.propertyId() + "/rates?startDate=" + checkIn + "&endDate=" + checkOut,
@@ -82,6 +87,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(6)
+    @DisplayName("예약 생성 성공")
     void 예약_생성_성공() {
         final ResponseEntity<String> response = requestCreateReservation(
                 userToken, propertyData.propertyId(), propertyData.roomTypeId(), checkIn, checkOut, 2);
@@ -97,6 +103,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(7)
+    @DisplayName("내 예약 목록 조회 성공")
     void 내_예약_목록_조회_성공() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/reservations", HttpMethod.GET, authEntity(userToken), String.class);
@@ -109,6 +116,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(8)
+    @DisplayName("예약 상세 조회 성공")
     void 예약_상세_조회_성공() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/reservations/" + reservationId, HttpMethod.GET, authEntity(userToken), String.class);
@@ -124,6 +132,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(9)
+    @DisplayName("예약 취소 성공")
     void 예약_취소_성공() {
         final ResponseEntity<String> response = requestCancelReservation(userToken, reservationId, "개인 사정으로 취소");
 
@@ -135,6 +144,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(10)
+    @DisplayName("취소 후 재고 복구 확인")
     void 취소_후_재고_복구_확인() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/extranet/room-types/" + propertyData.roomTypeId() + "/inventory?startDate=" + checkIn + "&endDate=" + checkOut,
@@ -151,6 +161,7 @@ class UserReservationFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(11)
+    @DisplayName("취소된 예약 상태 확인")
     void 취소된_예약_상태_확인() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/reservations/" + reservationId, HttpMethod.GET, authEntity(userToken), String.class);

@@ -28,6 +28,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(1)
+    @DisplayName("파트너 가입 성공")
     void 파트너_가입_성공() {
         partnerId = registerPartner(LOGIN_ID, PASSWORD, "테스트 호텔업체");
         assertThat(partnerId).isPositive();
@@ -35,6 +36,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(2)
+    @DisplayName("파트너 로그인 성공")
     void 파트너_로그인_성공() {
         partnerToken = loginPartner(LOGIN_ID, PASSWORD);
         assertThat(partnerToken).isNotBlank();
@@ -42,6 +44,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(3)
+    @DisplayName("내 정보 조회 성공")
     void 내_정보_조회_성공() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/extranet/partners/me", HttpMethod.GET, authEntity(partnerToken), String.class);
@@ -54,6 +57,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(4)
+    @DisplayName("숙소 등록 성공")
     void 숙소_등록_성공() {
         propertyId = createProperty(partnerToken, "스테이호스트 강남점");
         assertThat(propertyId).isPositive();
@@ -61,6 +65,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(5)
+    @DisplayName("숙소 상태 변경 ACTIVE")
     void 숙소_상태_변경_ACTIVE() {
         activateProperty(partnerToken, propertyId);
 
@@ -73,6 +78,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(6)
+    @DisplayName("객실유형 등록 성공")
     void 객실유형_등록_성공() {
         roomTypeId = createRoomType(partnerToken, propertyId, "디럭스 트윈", 2, 150000, 5);
         assertThat(roomTypeId).isPositive();
@@ -80,6 +86,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(7)
+    @DisplayName("요금 설정 성공")
     void 요금_설정_성공() {
         rateStart = LocalDate.now().plusDays(1);
         rateEnd = rateStart.plusDays(7);
@@ -88,12 +95,14 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(8)
+    @DisplayName("재고 설정 성공")
     void 재고_설정_성공() {
         setInventory(partnerToken, roomTypeId, rateStart, rateEnd, 5);
     }
 
     @Test
     @Order(9)
+    @DisplayName("요금 조회 성공")
     void 요금_조회_성공() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/extranet/room-types/" + roomTypeId + "/rates?startDate=" + rateStart + "&endDate=" + rateEnd,
@@ -112,6 +121,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(10)
+    @DisplayName("재고 조회 성공")
     void 재고_조회_성공() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/extranet/room-types/" + roomTypeId + "/inventory?startDate=" + rateStart + "&endDate=" + rateEnd,
@@ -130,6 +140,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(11)
+    @DisplayName("숙소 정보 수정 성공")
     void 숙소_정보_수정_성공() {
         final Map<String, Object> body = Map.of(
                 "name", "스테이호스트 강남점 (리뉴얼)",
@@ -148,6 +159,7 @@ class PartnerPropertyFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @Order(12)
+    @DisplayName("내 숙소 목록 조회 성공")
     void 내_숙소_목록_조회_성공() {
         final ResponseEntity<String> response = restTemplate.exchange(
                 "/api/extranet/properties", HttpMethod.GET, authEntity(partnerToken), String.class);
