@@ -510,10 +510,10 @@ sequenceDiagram
                 else 매핑 있음 (MAPPED)
                     MappingRepo-->>SupplierSyncService: mapping { property_id }
 
-                    SupplierSyncService->>SupplierAdapter: fetchRates(externalPropertyId, today, today+90일)
+                    SupplierSyncService->>SupplierAdapter: fetchRates(externalPropertyId, today, today+30일)
                     SupplierAdapter-->>SupplierSyncService: List<SupplierRateData>
 
-                    SupplierSyncService->>SupplierAdapter: fetchInventory(externalPropertyId, today, today+90일)
+                    SupplierSyncService->>SupplierAdapter: fetchInventory(externalPropertyId, today, today+30일)
                     SupplierAdapter-->>SupplierSyncService: List<SupplierInventoryData>
 
                     SupplierSyncService->>PropertyService: updateFromSupplier(propertyId, rateData, inventoryData)

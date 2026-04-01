@@ -7,6 +7,8 @@ import com.jemini.stayhost.property.domain.component.InventoryManager;
 import com.jemini.stayhost.property.domain.component.RateManager;
 import com.jemini.stayhost.property.domain.component.RateReader;
 import com.jemini.stayhost.property.domain.component.RoomTypeReader;
+import com.jemini.stayhost.property.domain.event.InventoryChangedEvent;
+import com.jemini.stayhost.property.domain.event.RateUpdatedEvent;
 import com.jemini.stayhost.property.domain.model.Inventory;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.domain.model.RoomType;
@@ -26,6 +28,7 @@ import com.jemini.stayhost.supplier.domain.model.SupplierSyncJob;
 import com.jemini.stayhost.supplier.domain.model.SyncJobType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +55,7 @@ public class SupplierSyncService {
     private final RateManager rateManager;
     private final InventoryReader inventoryReader;
     private final InventoryManager inventoryManager;
+    private final ApplicationEventPublisher eventPublisher;
     private final List<SupplierAdapter> adapters;
 
     @Transactional
@@ -87,8 +91,7 @@ public class SupplierSyncService {
     }
 
     /**
-     * MAPPED 상태인 공급사 숙소의 요금/재고를 내부 테이블에 동기화한다.
-     * 매핑된 내부 숙소의 첫 번째 객실 유형에 요금/재고를 반영한다.
+     * MAPPED 상태인 공급사 숙소의 요금/재고를 내부 테이블에 동기화한다. 매핑된 내부 숙소의 첫 번째 객실 유형에 요금/재고를 반영한다.
      */
     private void syncRatesAndInventory(final Long supplierId, final SupplierAdapter adapter) {
         final List<SupplierProperty> supplierProperties = supplierPropertyReader.findBySupplierId(supplierId);
@@ -161,6 +164,11 @@ public class SupplierSyncService {
         if (!newRates.isEmpty()) {
             rateManager.saveAll(newRates);
         }
+
+        final List<LocalDate> affectedDates = supplierRates.stream().map(SupplierRateData::date).toList();
+        if (!affectedDates.isEmpty()) {
+            eventPublisher.publishEvent(RateUpdatedEvent.create(roomType.getId(), affectedDates));
+        }
     }
 
     private void syncInventory(
@@ -188,13 +196,18 @@ public class SupplierSyncService {
         if (!newInventories.isEmpty()) {
             inventoryManager.saveAll(newInventories);
         }
+
+        final List<LocalDate> affectedDates = supplierInventories.stream().map(SupplierInventoryData::date).toList();
+        if (!affectedDates.isEmpty()) {
+            eventPublisher.publishEvent(InventoryChangedEvent.create(roomType.getId(), affectedDates));
+        }
     }
 
     private SupplierAdapter findAdapter(final String supplierCode) {
         return adapters.stream()
-                .filter(adapter -> adapter.getSupplierCode().equals(supplierCode))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.SUPPLIER_ADAPTER_NOT_FOUND));
+            .filter(adapter -> adapter.getSupplierCode().equals(supplierCode))
+            .findFirst()
+            .orElseThrow(() -> new BusinessException(ErrorCode.SUPPLIER_ADAPTER_NOT_FOUND));
     }
 
     private void syncProperty(final Long supplierId, final SupplierPropertyData data) {

@@ -2,15 +2,12 @@ package com.jemini.stayhost.booking.infrastructure.cache;
 
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
-import com.jemini.stayhost.property.domain.event.InventoryChangedEvent;
 import com.jemini.stayhost.property.domain.model.Inventory;
 import com.jemini.stayhost.property.infrastructure.persistence.InventoryRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,13 +19,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class InventoryCache {
 
+    private static final int MAX_BOOKING_DAYS = 30;
+
     private final InventoryRepository inventoryRepository;
     private final ConcurrentHashMap<String, AtomicInteger> cache = new ConcurrentHashMap<>();
 
     @PostConstruct
     void warmUp() {
         final LocalDate today = LocalDate.now();
-        final LocalDate endDate = today.plusDays(90);
+        final LocalDate endDate = today.plusDays(MAX_BOOKING_DAYS);
         final List<Inventory> inventories = inventoryRepository.findByDateBetween(today, endDate);
 
         inventories.forEach(inv -> {
@@ -41,6 +40,8 @@ public class InventoryCache {
 
     /**
      * CAS 1차 필터링. 모든 날짜의 재고를 원자적으로 감소시킨다. 하나라도 실패하면 이미 감소시킨 것을 복원하고 예외를 던진다.
+     * <p> 캐시에 키가 없으면(워밍업 범위 밖, 또는 새로 추가된 재고) 무조건 차단.
+     * <p> "overselling 방지"를 우선한 보수적 선택인데, 판매 기회 손실이 우려되면 null일 때 캐시를 통과시키고 DB 락에서 판단하도록 변경 가능
      */
     public void tryDecreaseAll(final Long roomTypeId, final List<LocalDate> dates) {
         int decreasedCount = 0;
@@ -49,9 +50,7 @@ public class InventoryCache {
             final String key = buildKey(roomTypeId, date);
             final AtomicInteger available = cache.get(key);
 
-            // available == null: 캐시에 키가 없는 경우 (워밍업 범위 밖, 신규 Inventory 등)
-            // DB에는 재고가 존재할 수 있으나, 현재는 보수적으로 차단한다.
-            // 판매 기회 손실을 허용하지 않으려면 null일 때 캐시를 통과시키고 DB 락에서 판단하도록 변경 가능.
+
             if (available == null || !tryDecrease(available)) {
                 rollbackDecrease(roomTypeId, dates, decreasedCount);
                 throw new BusinessException(ErrorCode.INVENTORY_INSUFFICIENT);
@@ -80,17 +79,14 @@ public class InventoryCache {
         restore(roomTypeId, dates);
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onInventoryChanged(final InventoryChangedEvent event) {
+    public void syncFromDb(final Long roomTypeId, final List<LocalDate> dates) {
         final List<Inventory> inventories = inventoryRepository.findByRoomTypeIdAndDateBetween(
-            event.roomTypeId(), event.affectedDates().getFirst(), event.affectedDates().getLast());
+            roomTypeId, dates.getFirst(), dates.getLast());
 
         inventories.forEach(inv -> {
             final String key = buildKey(inv.getRoomTypeId(), inv.getDate());
             cache.put(key, new AtomicInteger(inv.getAvailableCount()));
         });
-
-        log.debug("InventoryCache 동기화: roomTypeId={}, dates={}", event.roomTypeId(), event.affectedDates().size());
     }
 
     private boolean tryDecrease(final AtomicInteger available) {

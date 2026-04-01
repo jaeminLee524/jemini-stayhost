@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -78,6 +79,9 @@ class SupplierSyncServiceTest {
     private InventoryManager inventoryManager;
 
     @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
     private SupplierAdapter mockAdapter;
 
     private static final Long SUPPLIER_ID = 1L;
@@ -96,6 +100,7 @@ class SupplierSyncServiceTest {
                 rateManager,
                 inventoryReader,
                 inventoryManager,
+                eventPublisher,
                 List.of(mockAdapter)
         );
     }

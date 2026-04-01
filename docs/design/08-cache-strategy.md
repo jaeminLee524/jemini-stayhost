@@ -279,13 +279,13 @@ public class CacheEvictListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPropertyUpdated(PropertyUpdatedEvent event) {
-        evict("property", "property:" + event.propertyId());
+        evict("property", event.propertyId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onRoomTypeUpdated(RoomTypeUpdatedEvent event) {
-        evict("roomTypes", "roomTypes:" + event.propertyId());
-        evict("property", "property:" + event.propertyId());
+        evict("roomTypes", event.propertyId());
+        evict("property", event.propertyId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -296,7 +296,7 @@ public class CacheEvictListener {
         );
     }
 
-    private void evict(String cacheName, String key) {
+    private void evict(String cacheName, Object key) {
         Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
             cache.evict(key);

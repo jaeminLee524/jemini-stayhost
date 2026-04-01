@@ -57,8 +57,8 @@ RatePolicyChangedEvent(roomTypeId, affectedDates)
 // 숙소 정보 변경 시
 PropertyUpdatedEvent(propertyId)
 
-// 객실 유형 변경 시
-RoomTypeUpdatedEvent(roomTypeId)
+// 객실 유형 변경 시 (객실이 속한 숙소 ID로 캐시 무효화)
+RoomTypeUpdatedEvent(propertyId)
 ```
 
 ---
