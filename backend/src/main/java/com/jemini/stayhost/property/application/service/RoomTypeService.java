@@ -29,6 +29,15 @@ public class RoomTypeService {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
+     * 객실 수용인원 검증. 초과이면 예외를 던진다.
+     */
+    @Transactional(readOnly = true)
+    public void validateGuestCount(final Long roomTypeId, final int guestCount) {
+        final RoomType roomType = roomTypeReader.getById(roomTypeId);
+        roomType.validateGuestCount(guestCount);
+    }
+
+    /**
      * 객실 유형 등록. 숙소 소유권을 검증한다.
      */
     @Transactional
@@ -42,6 +51,8 @@ public class RoomTypeService {
 
         final RoomType roomType = buildRoomType(propertyId, command);
         final RoomType saved = roomTypeManager.save(roomType);
+
+        eventPublisher.publishEvent(RoomTypeUpdatedEvent.create(propertyId));
 
         return RoomTypeResult.from(saved);
     }

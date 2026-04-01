@@ -157,11 +157,18 @@ public class ReservationService {
         final String status,
         final Pageable pageable
     ) {
-        final Page<Reservation> page = isNotBlank(status)
+        final Page<Reservation> reservationPage = isNotBlank(status)
             ? reservationReader.findByUserIdAndStatus(userId, status, pageable)
             : reservationReader.findByUserId(userId, pageable);
 
-        return PageResult.from(page.map(this::toResultFromReservation));
+        return PageResult.from(reservationPage.map(this::toResultFromReservation));
+    }
+
+    private ReservationResult toResultFromReservation(final Reservation reservation) {
+        final Property property = propertyReader.getById(reservation.getPropertyId());
+        final RoomType roomType = roomTypeReader.getById(reservation.getRoomTypeId());
+
+        return toResult(reservation, property, roomType);
     }
 
     /**
@@ -214,13 +221,6 @@ public class ReservationService {
             property.getCheckInTime(),
             property.getCheckOutTime()
         );
-    }
-
-    private ReservationResult toResultFromReservation(final Reservation reservation) {
-        final Property property = propertyReader.getById(reservation.getPropertyId());
-        final RoomType roomType = roomTypeReader.getById(reservation.getRoomTypeId());
-
-        return toResult(reservation, property, roomType);
     }
 
     private void restoreInventories(final Reservation reservation) {

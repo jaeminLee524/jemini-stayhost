@@ -7,8 +7,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -20,4 +22,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM Reservation r WHERE r.id = :id")
     Optional<Reservation> findByIdWithLock(Long id);
+
+    // Dirty Checking 대신 1번의 쿼리로 원자적 갱신 처리를 위해 JPQL로 직접 업데이트 쿼리를 작성
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE Reservation r
+        SET r.status = :toStatus, r.cancelledAt = :cancelledAt, r.cancelReason = :cancelReason
+        WHERE r.id = :id AND r.status = :fromStatus
+        """)
+    int updateStatus(Long id, ReservationStatus fromStatus, ReservationStatus toStatus, LocalDateTime cancelledAt, String cancelReason);
 }

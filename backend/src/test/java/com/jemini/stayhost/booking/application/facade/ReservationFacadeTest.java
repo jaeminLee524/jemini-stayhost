@@ -6,12 +6,8 @@ import com.jemini.stayhost.booking.application.service.ReservationService;
 import com.jemini.stayhost.booking.infrastructure.cache.InventoryCache;
 import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
-import com.jemini.stayhost.property.domain.component.PropertyReader;
-import com.jemini.stayhost.property.domain.component.RoomTypeReader;
-import com.jemini.stayhost.property.domain.model.Property;
-import com.jemini.stayhost.property.domain.model.PropertyStatus;
-import com.jemini.stayhost.property.domain.model.PropertyType;
-import com.jemini.stayhost.property.domain.model.RoomType;
+import com.jemini.stayhost.property.application.service.PropertyService;
+import com.jemini.stayhost.property.application.service.RoomTypeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,13 +16,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -39,10 +35,10 @@ class ReservationFacadeTest {
     private ReservationService reservationService;
 
     @Mock
-    private PropertyReader propertyReader;
+    private PropertyService propertyService;
 
     @Mock
-    private RoomTypeReader roomTypeReader;
+    private RoomTypeService roomTypeService;
 
     @Mock
     private InventoryCache inventoryCache;
@@ -54,7 +50,7 @@ class ReservationFacadeTest {
     @BeforeEach
     void setUp() {
         reservationFacade = new ReservationFacade(
-            reservationService, propertyReader, roomTypeReader, inventoryCache
+            reservationService, propertyService, roomTypeService, inventoryCache
         );
     }
 
@@ -63,9 +59,9 @@ class ReservationFacadeTest {
     void 비활성_숙소에_예약하면_예외() {
         final CreateReservationCommand command = createCommand(
             LocalDate.now().plusDays(1), LocalDate.now().plusDays(2));
-        final Property property = createProperty(PropertyStatus.INACTIVE);
 
-        given(propertyReader.getById(PROPERTY_ID)).willReturn(property);
+        willThrow(new BusinessException(ErrorCode.PROPERTY_NOT_ACTIVE))
+            .given(propertyService).validatePropertyActive(PROPERTY_ID);
 
         assertThatThrownBy(() -> reservationFacade.createReservation(USER_ID, command))
             .isInstanceOf(BusinessException.class)
@@ -80,11 +76,6 @@ class ReservationFacadeTest {
     void 체크인이_체크아웃_이후이면_예외() {
         final CreateReservationCommand command = createCommand(
             LocalDate.now().plusDays(3), LocalDate.now().plusDays(1));
-        final Property property = createProperty(PropertyStatus.ACTIVE);
-        final RoomType roomType = RoomType.create(PROPERTY_ID, "디럭스", "설명", 4, java.math.BigDecimal.valueOf(100000), "WiFi,TV", 10);
-
-        given(propertyReader.getById(PROPERTY_ID)).willReturn(property);
-        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(roomType);
 
         assertThatThrownBy(() -> reservationFacade.createReservation(USER_ID, command))
             .isInstanceOf(BusinessException.class)
@@ -100,12 +91,8 @@ class ReservationFacadeTest {
         final LocalDate checkIn = LocalDate.now().plusDays(1);
         final LocalDate checkOut = LocalDate.now().plusDays(2);
         final CreateReservationCommand command = createCommand(checkIn, checkOut);
-        final Property property = createProperty(PropertyStatus.ACTIVE);
-        final RoomType roomType = RoomType.create(PROPERTY_ID, "디럭스", "설명", 4, java.math.BigDecimal.valueOf(100000), "WiFi,TV", 10);
         final List<LocalDate> stayDates = checkIn.datesUntil(checkOut).toList();
 
-        given(propertyReader.getById(PROPERTY_ID)).willReturn(property);
-        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(roomType);
         given(reservationService.createWithInventoryLock(eq(USER_ID), eq(command)))
             .willThrow(new BusinessException(ErrorCode.INVENTORY_INSUFFICIENT));
 
@@ -121,11 +108,7 @@ class ReservationFacadeTest {
         final LocalDate checkIn = LocalDate.now().plusDays(1);
         final LocalDate checkOut = LocalDate.now().plusDays(2);
         final CreateReservationCommand command = createCommand(checkIn, checkOut);
-        final Property property = createProperty(PropertyStatus.ACTIVE);
-        final RoomType roomType = RoomType.create(PROPERTY_ID, "디럭스", "설명", 4, java.math.BigDecimal.valueOf(100000), "WiFi,TV", 10);
 
-        given(propertyReader.getById(PROPERTY_ID)).willReturn(property);
-        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(roomType);
         given(reservationService.createWithInventoryLock(eq(USER_ID), eq(command)))
             .willReturn(org.mockito.Mockito.mock(ReservationResult.class));
 
@@ -139,11 +122,9 @@ class ReservationFacadeTest {
     void 수용인원_초과시_캐시_차감_전에_예외() {
         final CreateReservationCommand command = createCommand(
             LocalDate.now().plusDays(1), LocalDate.now().plusDays(2), 10);
-        final Property property = createProperty(PropertyStatus.ACTIVE);
-        final RoomType roomType = RoomType.create(PROPERTY_ID, "디럭스", "설명", 4, java.math.BigDecimal.valueOf(100000), "WiFi,TV", 10);
 
-        given(propertyReader.getById(PROPERTY_ID)).willReturn(property);
-        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(roomType);
+        willThrow(new BusinessException(ErrorCode.INVALID_GUEST_COUNT))
+            .given(roomTypeService).validateGuestCount(ROOM_TYPE_ID, 10);
 
         assertThatThrownBy(() -> reservationFacade.createReservation(USER_ID, command))
             .isInstanceOf(BusinessException.class)
@@ -167,17 +148,5 @@ class ReservationFacadeTest {
             .guestPhone("010-1234-5678")
             .guestCount(guestCount)
             .build();
-    }
-
-    private Property createProperty(final PropertyStatus status) {
-        final Property property = Property.create(
-            1L, "테스트 호텔", PropertyType.HOTEL, "설명",
-            "서울시 강남구", "서울", LocalTime.of(15, 0), LocalTime.of(11, 0),
-            null, null, null
-        );
-        if (status == PropertyStatus.ACTIVE) {
-            property.changeStatus(PropertyStatus.ACTIVE);
-        }
-        return property;
     }
 }
