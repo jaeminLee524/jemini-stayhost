@@ -19,3 +19,9 @@ spring:
 
   flyway:
     enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.jemini.stayhost: INFO
+    org.hibernate.SQL: INFO

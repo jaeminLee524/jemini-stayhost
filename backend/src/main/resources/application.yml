@@ -67,5 +67,5 @@ management:
 
 logging:
   level:
-    com.jemini.stayhost: DEBUG
-    org.hibernate.SQL: DEBUG
+    com.jemini.stayhost: INFO
+    org.hibernate.SQL: INFO

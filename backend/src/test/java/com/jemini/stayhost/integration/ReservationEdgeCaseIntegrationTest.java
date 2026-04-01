@@ -4,15 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jemini.stayhost.support.IntegrationTestBase;
 import org.junit.jupiter.api.*;
 import org.springframework.http.*;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDate;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ReservationEdgeCaseIntegrationTest extends IntegrationTestBase {
 
