@@ -5,6 +5,7 @@ import com.jemini.stayhost.common.security.CustomAccessDeniedHandler;
 import com.jemini.stayhost.common.security.JwtAuthenticationEntryPoint;
 import com.jemini.stayhost.common.security.JwtAuthenticationFilter;
 import com.jemini.stayhost.common.security.JwtProvider;
+import com.jemini.stayhost.health.presentation.HealthCheckController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

@@ -16,13 +16,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 public class CustomerReservationController implements CustomerReservationDocs {
 
     private final ReservationFacade reservationFacade;
     private final ReservationService reservationService;
 
-    @PostMapping("/api/reservations")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiBaseResponse<CreateReservationResponse> createReservation(
         final UserId userId,
@@ -33,7 +34,7 @@ public class CustomerReservationController implements CustomerReservationDocs {
         return ApiBaseResponse.success(CreateReservationResponse.from(result));
     }
 
-    @GetMapping("/api/reservations")
+    @GetMapping
     public ApiBaseResponse<PageResult<ReservationListResponse>> getMyReservations(
         final UserId userId,
         @RequestParam(required = false) final String status,
@@ -44,7 +45,7 @@ public class CustomerReservationController implements CustomerReservationDocs {
         return ApiBaseResponse.success(result.map(ReservationListResponse::from));
     }
 
-    @GetMapping("/api/reservations/{id}")
+    @GetMapping("/{id}")
     public ApiBaseResponse<ReservationDetailResponse> getReservation(
         final UserId userId,
         @PathVariable final Long id
@@ -54,7 +55,7 @@ public class CustomerReservationController implements CustomerReservationDocs {
         return ApiBaseResponse.success(ReservationDetailResponse.from(result));
     }
 
-    @PostMapping("/api/reservations/{id}/cancel")
+    @PostMapping("/{id}/cancel")
     public ApiBaseResponse<CancelReservationResponse> cancelReservation(
         final UserId userId,
         @PathVariable final Long id,

@@ -17,15 +17,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/extranet/room-types/{id}/rates")
 @RequiredArgsConstructor
 public class ExtranetRateController implements ExtranetRateDocs {
 
     private final RateService rateService;
 
-    @PutMapping("/api/extranet/room-types/{id}/rates")
+    @PutMapping
     public ApiBaseResponse<RateBulkSetResponse> bulkSet(
         @PathVariable final Long id,
         final PartnerId partnerId,
@@ -36,7 +38,7 @@ public class ExtranetRateController implements ExtranetRateDocs {
         return ApiBaseResponse.success(RateBulkSetResponse.from(result));
     }
 
-    @GetMapping("/api/extranet/room-types/{id}/rates")
+    @GetMapping
     public ApiBaseResponse<RateListResponse> getRates(
         @PathVariable final Long id,
         final PartnerId partnerId,

@@ -16,12 +16,13 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 @RestController
+@RequestMapping("/api/extranet/room-types/{id}/inventory")
 @RequiredArgsConstructor
 public class ExtranetInventoryController implements ExtranetInventoryDocs {
 
     private final InventoryService inventoryService;
 
-    @PutMapping("/api/extranet/room-types/{id}/inventory")
+    @PutMapping
     public ApiBaseResponse<InventoryBulkSetResponse> bulkSet(
         @PathVariable final Long id,
         final PartnerId partnerId,
@@ -32,7 +33,7 @@ public class ExtranetInventoryController implements ExtranetInventoryDocs {
         return ApiBaseResponse.success(InventoryBulkSetResponse.from(result));
     }
 
-    @GetMapping("/api/extranet/room-types/{id}/inventory")
+    @GetMapping
     public ApiBaseResponse<InventoryListResponse> getInventory(
         @PathVariable final Long id,
         final PartnerId partnerId,

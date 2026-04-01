@@ -15,12 +15,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api/extranet/properties")
 @RequiredArgsConstructor
 public class ExtranetPropertyController implements ExtranetPropertyDocs {
 
     private final PropertyService propertyService;
 
-    @PostMapping("/api/extranet/properties")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiBaseResponse<PropertyResponse> create(
         final PartnerId partnerId,
@@ -30,7 +31,7 @@ public class ExtranetPropertyController implements ExtranetPropertyDocs {
         return ApiBaseResponse.success(PropertyResponse.from(result));
     }
 
-    @GetMapping("/api/extranet/properties")
+    @GetMapping
     public ApiBaseResponse<PageResult<PropertyListResponse>> getMyProperties(
         final PartnerId partnerId,
         final Pageable pageable
@@ -40,7 +41,7 @@ public class ExtranetPropertyController implements ExtranetPropertyDocs {
         return ApiBaseResponse.success(page);
     }
 
-    @GetMapping("/api/extranet/properties/{id}")
+    @GetMapping("/{id}")
     public ApiBaseResponse<PropertyResponse> getProperty(
         @PathVariable final Long id,
         final PartnerId partnerId
@@ -49,7 +50,7 @@ public class ExtranetPropertyController implements ExtranetPropertyDocs {
         return ApiBaseResponse.success(PropertyResponse.from(result));
     }
 
-    @PutMapping("/api/extranet/properties/{id}")
+    @PutMapping("/{id}")
     public ApiBaseResponse<PropertyResponse> update(
         @PathVariable final Long id,
         final PartnerId partnerId,
@@ -59,7 +60,7 @@ public class ExtranetPropertyController implements ExtranetPropertyDocs {
         return ApiBaseResponse.success(PropertyResponse.from(result));
     }
 
-    @PatchMapping("/api/extranet/properties/{id}/status")
+    @PatchMapping("/{id}/status")
     public ApiBaseResponse<PropertyResponse> changeStatus(
         @PathVariable final Long id,
         final PartnerId partnerId,

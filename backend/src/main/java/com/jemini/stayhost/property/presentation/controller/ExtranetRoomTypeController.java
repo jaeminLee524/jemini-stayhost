@@ -16,12 +16,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/extranet")
 @RequiredArgsConstructor
 public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
 
     private final RoomTypeService roomTypeService;
 
-    @PostMapping("/api/extranet/properties/{propertyId}/room-types")
+    @PostMapping("/properties/{propertyId}/room-types")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiBaseResponse<RoomTypeResponse> create(
         @PathVariable final Long propertyId,
@@ -33,7 +34,7 @@ public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
         return ApiBaseResponse.success(RoomTypeResponse.from(result));
     }
 
-    @GetMapping("/api/extranet/properties/{propertyId}/room-types")
+    @GetMapping("/properties/{propertyId}/room-types")
     public ApiBaseResponse<List<RoomTypeResponse>> getRoomTypes(
         @PathVariable final Long propertyId,
         final PartnerId partnerId
@@ -43,7 +44,7 @@ public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
         return ApiBaseResponse.success(RoomTypeResponse.mapToResponse(roomTypes));
     }
 
-    @PutMapping("/api/extranet/room-types/{id}")
+    @PutMapping("/room-types/{id}")
     public ApiBaseResponse<RoomTypeResponse> update(
         @PathVariable final Long id,
         final PartnerId partnerId,

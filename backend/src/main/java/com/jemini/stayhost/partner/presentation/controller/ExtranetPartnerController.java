@@ -12,12 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api/extranet/partners")
 @RequiredArgsConstructor
 public class ExtranetPartnerController implements ExtranetPartnerDocs {
 
     private final PartnerService partnerService;
 
-    @PostMapping("/api/extranet/partners")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiBaseResponse<PartnerRegisterResponse> register(
         @RequestBody @Valid final PartnerRegisterRequest request
@@ -26,7 +27,7 @@ public class ExtranetPartnerController implements ExtranetPartnerDocs {
         return ApiBaseResponse.success(PartnerRegisterResponse.from(result));
     }
 
-    @GetMapping("/api/extranet/partners/me")
+    @GetMapping("/me")
     public ApiBaseResponse<PartnerResponse> getMyPartner(
         final PartnerId partnerId
     ) {
@@ -34,7 +35,7 @@ public class ExtranetPartnerController implements ExtranetPartnerDocs {
         return ApiBaseResponse.success(PartnerResponse.from(result));
     }
 
-    @PutMapping("/api/extranet/partners/me")
+    @PutMapping("/me")
     public ApiBaseResponse<PartnerResponse> updateMyPartner(
         final PartnerId partnerId,
         @RequestBody @Valid final PartnerUpdateRequest request

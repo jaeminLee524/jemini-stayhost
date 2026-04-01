@@ -17,12 +17,13 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 @RestController
+@RequestMapping("/api/public")
 @RequiredArgsConstructor
 public class CustomerSearchController implements CustomerSearchDocs {
 
     private final SearchService searchService;
 
-    @GetMapping("/api/public/search/properties")
+    @GetMapping("/search/properties")
     public ApiBaseResponse<PageResult<PropertySearchResponse>> searchProperties(
         @RequestParam(required = false) final String region,
         @RequestParam(required = false) final String keyword,
@@ -33,7 +34,7 @@ public class CustomerSearchController implements CustomerSearchDocs {
         return ApiBaseResponse.success(result.map(PropertySearchResponse::from));
     }
 
-    @GetMapping("/api/public/properties/{id}")
+    @GetMapping("/properties/{id}")
     public ApiBaseResponse<PropertyDetailResponse> getPropertyDetail(
         @PathVariable final Long id
     ) {
@@ -42,7 +43,7 @@ public class CustomerSearchController implements CustomerSearchDocs {
         return ApiBaseResponse.success(PropertyDetailResponse.from(result));
     }
 
-    @GetMapping("/api/public/search/properties/{id}/rates")
+    @GetMapping("/search/properties/{id}/rates")
     public ApiBaseResponse<RoomTypeRateResponse> getRoomTypeRates(
         @PathVariable final Long id,
         @RequestParam final LocalDate startDate,
