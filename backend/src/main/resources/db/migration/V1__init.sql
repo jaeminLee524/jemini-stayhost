@@ -60,7 +60,7 @@ CREATE TABLE room_type (
     max_occupancy       INT             NOT NULL               COMMENT '최대 수용 인원',
     base_price          DECIMAL(12, 2)  NOT NULL               COMMENT '기본 요금',
     amenities           JSON            NULL                   COMMENT '편의시설 목록(JSON)',
-    total_room_count    INT             NOT NULL               COMMENT '총 객실 수',
+    total_room_count    INT             NOT NULL               COMMENT '총 객실 수 (메타 정보, inventory.total_count 초기값 기준)',
     status              VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE' COMMENT '상태(ACTIVE/INACTIVE)',
     created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
