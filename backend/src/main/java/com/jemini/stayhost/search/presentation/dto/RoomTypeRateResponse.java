@@ -1,50 +1,50 @@
 package com.jemini.stayhost.search.presentation.dto;
 
+import com.jemini.stayhost.search.application.dto.DailyRateResult;
+import com.jemini.stayhost.search.application.dto.RoomTypeRateEntryResult;
 import com.jemini.stayhost.search.application.dto.RoomTypeRateResult;
-import lombok.Builder;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
+import lombok.Builder;
 
 @Builder
 public record RoomTypeRateResponse(
     Long propertyId,
-    List<RoomTypeRateEntry> roomTypes
+    List<RoomTypeRateEntryResponse> roomTypes
 ) {
-
-    @Builder
-    public record RoomTypeRateEntry(
-        Long id,
-        String name,
-        int maxOccupancy,
-        List<DailyRate> rates
-    ) {}
-
-    @Builder
-    public record DailyRate(
-        LocalDate date,
-        BigDecimal price,
-        boolean available
-    ) {}
 
     public static RoomTypeRateResponse from(final RoomTypeRateResult result) {
         return RoomTypeRateResponse.builder()
             .propertyId(result.propertyId())
-            .roomTypes(result.roomTypes().stream()
-                .map(rt -> RoomTypeRateEntry.builder()
-                    .id(rt.id())
-                    .name(rt.name())
-                    .maxOccupancy(rt.maxOccupancy())
-                    .rates(rt.rates().stream()
-                        .map(r -> DailyRate.builder()
-                            .date(r.date())
-                            .price(r.price())
-                            .available(r.available())
-                            .build())
-                        .toList())
-                    .build())
-                .toList())
+            .roomTypes(mapToRoomTypes(result))
+            .build();
+    }
+
+    private static List<RoomTypeRateEntryResponse> mapToRoomTypes(RoomTypeRateResult result) {
+        return result.roomTypes().stream()
+            .map(RoomTypeRateResponse::mapToRoomTypeRateEntry)
+            .toList();
+    }
+
+    private static RoomTypeRateEntryResponse mapToRoomTypeRateEntry(RoomTypeRateEntryResult rt) {
+        return RoomTypeRateEntryResponse.builder()
+            .id(rt.id())
+            .name(rt.name())
+            .maxOccupancy(rt.maxOccupancy())
+            .rates(mapToDailyRates(rt.rates()))
+            .build();
+    }
+
+    private static List<DailyRateResponse> mapToDailyRates(List<DailyRateResult> rates) {
+        return rates.stream()
+            .map(RoomTypeRateResponse::mapToDailyRate)
+            .toList();
+    }
+
+    private static DailyRateResponse mapToDailyRate(DailyRateResult r) {
+        return DailyRateResponse.builder()
+            .date(r.date())
+            .price(r.price())
+            .available(r.available())
             .build();
     }
 }

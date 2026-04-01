@@ -1,11 +1,14 @@
 package com.jemini.stayhost.search.presentation.dto;
 
 import com.jemini.stayhost.search.application.dto.PropertyDetailResult;
+import com.jemini.stayhost.search.application.dto.PropertyImageEntryResult;
+import com.jemini.stayhost.search.application.dto.RoomTypeEntryResult;
 import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
+import org.jspecify.annotations.NonNull;
 
 @Builder
 public record PropertyDetailResponse(
@@ -20,25 +23,9 @@ public record PropertyDetailResponse(
     LocalTime checkInTime,
     LocalTime checkOutTime,
     String thumbnailUrl,
-    List<ImageEntry> images,
-    List<RoomTypeEntry> roomTypes
+    List<ImageEntryResponse> images,
+    List<RoomTypeEntryResponse> roomTypes
 ) {
-
-    @Builder
-    public record ImageEntry(
-        String imageUrl,
-        int sortOrder
-    ) {}
-
-    @Builder
-    public record RoomTypeEntry(
-        Long id,
-        String name,
-        String description,
-        int maxOccupancy,
-        BigDecimal basePrice,
-        String amenities
-    ) {}
 
     public static PropertyDetailResponse from(final PropertyDetailResult result) {
         return PropertyDetailResponse.builder()
@@ -53,22 +40,38 @@ public record PropertyDetailResponse(
             .checkInTime(result.checkInTime())
             .checkOutTime(result.checkOutTime())
             .thumbnailUrl(result.thumbnailUrl())
-            .images(result.images().stream()
-                .map(img -> ImageEntry.builder()
-                    .imageUrl(img.imageUrl())
-                    .sortOrder(img.sortOrder())
-                    .build())
-                .toList())
-            .roomTypes(result.roomTypes().stream()
-                .map(rt -> RoomTypeEntry.builder()
-                    .id(rt.id())
-                    .name(rt.name())
-                    .description(rt.description())
-                    .maxOccupancy(rt.maxOccupancy())
-                    .basePrice(rt.basePrice())
-                    .amenities(rt.amenities())
-                    .build())
-                .toList())
+            .images(mapToImageEntries(result))
+            .roomTypes(mapToRooTypes(result))
+            .build();
+    }
+
+    private static List<ImageEntryResponse> mapToImageEntries(PropertyDetailResult result) {
+        return result.images().stream()
+            .map(PropertyDetailResponse::mapToImageEntry)
+            .toList();
+    }
+
+    private static ImageEntryResponse mapToImageEntry(PropertyImageEntryResult img) {
+        return ImageEntryResponse.builder()
+            .imageUrl(img.imageUrl())
+            .sortOrder(img.sortOrder())
+            .build();
+    }
+
+    private static List<RoomTypeEntryResponse> mapToRooTypes(PropertyDetailResult result) {
+        return result.roomTypes().stream()
+            .map(PropertyDetailResponse::mapToRoomTypeEntry)
+            .toList();
+    }
+
+    private static RoomTypeEntryResponse mapToRoomTypeEntry(RoomTypeEntryResult rt) {
+        return RoomTypeEntryResponse.builder()
+            .id(rt.id())
+            .name(rt.name())
+            .description(rt.description())
+            .maxOccupancy(rt.maxOccupancy())
+            .basePrice(rt.basePrice())
+            .amenities(rt.amenities())
             .build();
     }
 }

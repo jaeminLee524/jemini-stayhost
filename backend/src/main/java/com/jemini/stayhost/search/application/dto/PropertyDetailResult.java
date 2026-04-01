@@ -1,9 +1,10 @@
 package com.jemini.stayhost.search.application.dto;
 
+import com.jemini.stayhost.property.domain.model.Property;
+import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.Builder;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -20,23 +21,28 @@ public record PropertyDetailResult(
     LocalTime checkInTime,
     LocalTime checkOutTime,
     String thumbnailUrl,
-    List<ImageEntry> images,
-    List<RoomTypeEntry> roomTypes
+    List<PropertyImageEntryResult> images,
+    List<RoomTypeEntryResult> roomTypes
 ) {
 
-    @Builder
-    public record ImageEntry(
-        String imageUrl,
-        int sortOrder
-    ) {}
-
-    @Builder
-    public record RoomTypeEntry(
-        Long id,
-        String name,
-        String description,
-        int maxOccupancy,
-        BigDecimal basePrice,
-        String amenities
-    ) {}
+    public static PropertyDetailResult from(
+        final Property property,
+        final List<RoomType> roomTypes
+    ) {
+        return PropertyDetailResult.builder()
+            .id(property.getId())
+            .name(property.getName())
+            .type(property.getType().name())
+            .description(property.getDescription())
+            .address(property.getAddress())
+            .region(property.getRegion())
+            .latitude(property.getLatitude())
+            .longitude(property.getLongitude())
+            .checkInTime(property.getCheckInTime())
+            .checkOutTime(property.getCheckOutTime())
+            .thumbnailUrl(property.getThumbnailUrl())
+            .images(property.getImages().stream().map(PropertyImageEntryResult::from).toList())
+            .roomTypes(roomTypes.stream().map(RoomTypeEntryResult::from).toList())
+            .build();
+    }
 }
