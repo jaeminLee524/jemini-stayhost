@@ -43,3 +43,7 @@ Thumbs.db
 *.log
 *.pem
 *.key
+
+# k6
+k6/scripts/seed-data.json
+docs/test/k6-results/*.json
