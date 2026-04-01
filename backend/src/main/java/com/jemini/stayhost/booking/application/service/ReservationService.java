@@ -187,13 +187,8 @@ public class ReservationService {
         final Long userId,
         final String cancelReason
     ) {
-        final Reservation reservation = reservationReader.getById(reservationId);
+        final Reservation reservation = reservationReader.getByIdWithLock(reservationId);
         reservation.validateOwner(userId);
-
-        final int affectedRows = reservationManager.cancel(reservationId, cancelReason);
-        if (affectedRows == 0) {
-            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CANCELLED);
-        }
         reservation.cancel(cancelReason);
 
         restoreInventories(reservation);

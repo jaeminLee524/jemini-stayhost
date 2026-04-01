@@ -8,6 +8,8 @@ public interface ReservationReader {
 
     Reservation getById(Long id);
 
+    Reservation getByIdWithLock(Long id);
+
     Page<Reservation> findByUserId(Long userId, Pageable pageable);
 
     Page<Reservation> findByUserIdAndStatus(Long userId, String status, Pageable pageable);

@@ -239,8 +239,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 성공")
     void 예약_취소_성공() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
-        given(reservationManager.cancel(RESERVATION_ID, "일정 변경")).willReturn(1);
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
         setupInventoriesForCancel();
 
         final CancelReservationResult result = reservationService.cancelReservation(
@@ -248,15 +247,14 @@ class ReservationServiceTest {
 
         assertThat(result.status()).isEqualTo("CANCELLED");
         assertThat(result.cancelReason()).isEqualTo("일정 변경");
-        verify(reservationManager).cancel(RESERVATION_ID, "일정 변경");
     }
 
     @Test
-    @DisplayName("예약 취소 - 이미 취소된 예약이면 affected rows 0으로 예외")
+    @DisplayName("예약 취소 - 이미 취소된 예약이면 예외")
     void 예약_취소_이미_취소된_예약이면_예외() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
-        given(reservationManager.cancel(RESERVATION_ID, "재취소")).willReturn(0);
+        reservation.cancel("최초 취소");
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, USER_ID, "재취소"))
@@ -268,7 +266,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 - 본인 예약이 아니면 예외")
     void 예약_취소_본인_예약이_아니면_예외() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, 999L, "취소"))
@@ -279,8 +277,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 시 재고 복원 확인")
     void 예약_취소_시_재고_복원_확인() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
-        given(reservationManager.cancel(RESERVATION_ID, "취소")).willReturn(1);
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
         final Inventory inv1 = Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 10);
         final Inventory inv2 = Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), 10);
         inv1.decreaseStock();
@@ -298,8 +295,8 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 실패 시 재고 복원과 캐시 복원이 호출되지 않는다")
     void 예약_취소_실패_시_재고_복원_호출되지_않는다() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
-        given(reservationManager.cancel(RESERVATION_ID, "재취소")).willReturn(0);
+        reservation.cancel("최초 취소");
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, USER_ID, "재취소"))
@@ -313,8 +310,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 성공 시 캐시 재고가 복원된다")
     void 예약_취소_성공_시_캐시_재고가_복원된다() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
-        given(reservationManager.cancel(RESERVATION_ID, "취소")).willReturn(1);
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
         setupInventoriesForCancel();
 
         reservationService.cancelReservation(RESERVATION_ID, USER_ID, "취소");
@@ -326,8 +322,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 성공 시 이벤트가 발행된다")
     void 예약_취소_성공_시_이벤트가_발행된다() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getById(RESERVATION_ID)).willReturn(reservation);
-        given(reservationManager.cancel(RESERVATION_ID, "취소")).willReturn(1);
+        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
         setupInventoriesForCancel();
 
         reservationService.cancelReservation(RESERVATION_ID, USER_ID, "취소");

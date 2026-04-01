@@ -24,6 +24,12 @@ public class ReservationReaderImpl implements ReservationReader {
     }
 
     @Override
+    public Reservation getByIdWithLock(final Long id) {
+        return reservationRepository.findByIdWithLock(id)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.RESERVATION_NOT_FOUND));
+    }
+
+    @Override
     public Page<Reservation> findByUserId(final Long userId, final Pageable pageable) {
         return reservationRepository.findByUserId(userId, pageable);
     }
