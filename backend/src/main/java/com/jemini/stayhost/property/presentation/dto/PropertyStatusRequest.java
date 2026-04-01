@@ -8,4 +8,5 @@ public record PropertyStatusRequest(
     @Schema(description = "변경할 상태", example = "ACTIVE")
     @NotBlank String status
 ) {
+
 }

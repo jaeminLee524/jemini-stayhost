@@ -1,6 +1,7 @@
 package com.jemini.stayhost.property.presentation.dto;
 
 import com.jemini.stayhost.property.application.dto.PropertyResult;
+import com.jemini.stayhost.property.application.dto.PropertyImageResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -71,7 +72,7 @@ public record PropertyResponse(
       Integer sortOrder
   ) {
 
-    public static ImageResponse from(final PropertyResult.ImageResult result) {
+    public static ImageResponse from(final PropertyImageResult result) {
       return ImageResponse.builder()
           .id(result.id())
           .imageUrl(result.imageUrl())

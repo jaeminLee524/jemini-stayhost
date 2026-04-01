@@ -736,7 +736,7 @@ Response `200 OK`
     "finalPrice": 300000,
     "status": "CONFIRMED",
     "source": "DIRECT",
-    "dailyRates": [
+    "dailyRateResults": [
       { "date": "2026-04-10", "price": 150000 },
       { "date": "2026-04-11", "price": 150000 }
     ],
@@ -1073,7 +1073,7 @@ Response `201 Created`
     "finalPrice": 300000,
     "status": "CONFIRMED",
     "confirmedAt": "2026-03-28T09:15:00",
-    "dailyRates": [
+    "dailyRateResults": [
       { "date": "2026-04-10", "price": 150000 },
       { "date": "2026-04-11", "price": 150000 }
     ]
@@ -1167,7 +1167,7 @@ Response `200 OK`
     "discountAmount": 0,
     "finalPrice": 300000,
     "status": "CONFIRMED",
-    "dailyRates": [
+    "dailyRateResults": [
       { "date": "2026-04-10", "price": 150000 },
       { "date": "2026-04-11", "price": 150000 }
     ],

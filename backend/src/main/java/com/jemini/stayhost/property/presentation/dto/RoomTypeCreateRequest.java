@@ -32,14 +32,14 @@ public record RoomTypeCreateRequest(
     @NotNull @Min(1) Integer totalRoomCount
 ) {
 
-  public RoomTypeCreateCommand toCommand() {
-    return RoomTypeCreateCommand.builder()
-        .name(this.name)
-        .description(this.description)
-        .maxOccupancy(this.maxOccupancy)
-        .basePrice(this.basePrice)
-        .amenities(this.amenities)
-        .totalRoomCount(this.totalRoomCount)
-        .build();
-  }
+    public RoomTypeCreateCommand toCommand() {
+        return RoomTypeCreateCommand.builder()
+            .name(this.name)
+            .description(this.description)
+            .maxOccupancy(this.maxOccupancy)
+            .basePrice(this.basePrice)
+            .amenities(this.amenities)
+            .totalRoomCount(this.totalRoomCount)
+            .build();
+    }
 }

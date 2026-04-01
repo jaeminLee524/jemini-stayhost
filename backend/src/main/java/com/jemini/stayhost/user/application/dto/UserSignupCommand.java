@@ -9,4 +9,5 @@ public record UserSignupCommand(
     String name,
     String phone
 ) {
+
 }

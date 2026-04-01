@@ -26,8 +26,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
         ORDER BY i.roomTypeId, i.date
         """)
     List<Inventory> findAndLockByRoomTypeIdAndDateRange(
-            @Param("roomTypeId") Long roomTypeId,
-            @Param("checkIn") LocalDate checkIn,
-            @Param("checkOut") LocalDate checkOut
+        @Param("roomTypeId") Long roomTypeId,
+        @Param("checkIn") LocalDate checkIn,
+        @Param("checkOut") LocalDate checkOut
     );
 }

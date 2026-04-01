@@ -31,7 +31,7 @@ public record ReservationResult(
     BigDecimal finalPrice,
     String status,
     String thumbnailUrl,
-    List<DailyRateEntry> dailyRates,
+    List<DailyRateEntryResult> dailyRates,
     LocalDateTime confirmedAt,
     LocalDateTime cancelledAt,
     String cancelReason,
@@ -39,10 +39,12 @@ public record ReservationResult(
 ) {
 
     @Builder
-    public record DailyRateEntry(
+    public record DailyRateEntryResult(
         LocalDate date,
         BigDecimal price
-    ) {}
+    ) {
+
+    }
 
     public static ReservationResult from(
         final Reservation reservation,
@@ -73,16 +75,24 @@ public record ReservationResult(
             .finalPrice(reservation.getFinalPrice())
             .status(reservation.getStatus().name())
             .thumbnailUrl(thumbnailUrl)
-            .dailyRates(reservation.getDailyRates().stream()
-                .map(dr -> DailyRateEntry.builder()
-                    .date(dr.getDate())
-                    .price(dr.getPrice())
-                    .build())
-                .toList())
+            .dailyRates(mapToDailyRates(reservation.getDailyRates()))
             .confirmedAt(reservation.getConfirmedAt())
             .cancelledAt(reservation.getCancelledAt())
             .cancelReason(reservation.getCancelReason())
             .createdAt(reservation.getCreatedAt())
+            .build();
+    }
+
+    private static List<DailyRateEntryResult> mapToDailyRates(List<ReservationDailyRate> reservationDailyRates) {
+        return reservationDailyRates.stream()
+            .map(ReservationResult::mapToDailyRate)
+            .toList();
+    }
+
+    private static DailyRateEntryResult mapToDailyRate(ReservationDailyRate dr) {
+        return DailyRateEntryResult.builder()
+            .date(dr.getDate())
+            .price(dr.getPrice())
             .build();
     }
 }

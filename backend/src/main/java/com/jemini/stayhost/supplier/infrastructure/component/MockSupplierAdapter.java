@@ -30,9 +30,9 @@ public class MockSupplierAdapter implements SupplierAdapter {
     public List<SupplierPropertyData> fetchProperties() {
         log.info("[MockSupplierAdapter] fetchProperties 호출 — 가상 숙소 3건 반환");
         return List.of(
-                new SupplierPropertyData("EXT-001", "목업 호텔 A", "서울 강남구", "서울", "HOTEL", "{\"id\":\"EXT-001\",\"name\":\"목업 호텔 A\"}"),
-                new SupplierPropertyData("EXT-002", "목업 펜션 B", "강원 속초시", "강원", "PENSION", "{\"id\":\"EXT-002\",\"name\":\"목업 펜션 B\"}"),
-                new SupplierPropertyData("EXT-003", "목업 리조트 C", "제주 서귀포시", "제주", "RESORT", "{\"id\":\"EXT-003\",\"name\":\"목업 리조트 C\"}")
+            new SupplierPropertyData("EXT-001", "목업 호텔 A", "서울 강남구", "서울", "HOTEL", "{\"id\":\"EXT-001\",\"name\":\"목업 호텔 A\"}"),
+            new SupplierPropertyData("EXT-002", "목업 펜션 B", "강원 속초시", "강원", "PENSION", "{\"id\":\"EXT-002\",\"name\":\"목업 펜션 B\"}"),
+            new SupplierPropertyData("EXT-003", "목업 리조트 C", "제주 서귀포시", "제주", "RESORT", "{\"id\":\"EXT-003\",\"name\":\"목업 리조트 C\"}")
         );
     }
 
@@ -40,16 +40,16 @@ public class MockSupplierAdapter implements SupplierAdapter {
     public List<SupplierRateData> fetchRates(final String externalPropertyId, final LocalDate from, final LocalDate to) {
         log.info("[MockSupplierAdapter] fetchRates: property={}, {}~{}", externalPropertyId, from, to);
         return from.datesUntil(to.plusDays(1))
-                .map(date -> new SupplierRateData("EXT-ROOM-001", date, MOCK_RATE, "KRW"))
-                .toList();
+            .map(date -> new SupplierRateData("EXT-ROOM-001", date, MOCK_RATE, "KRW"))
+            .toList();
     }
 
     @Override
     public List<SupplierInventoryData> fetchInventory(final String externalPropertyId, final LocalDate from, final LocalDate to) {
         log.info("[MockSupplierAdapter] fetchInventory: property={}", externalPropertyId);
         return from.datesUntil(to.plusDays(1))
-                .map(date -> new SupplierInventoryData("EXT-ROOM-001", date, MOCK_AVAILABLE_COUNT))
-                .toList();
+            .map(date -> new SupplierInventoryData("EXT-ROOM-001", date, MOCK_AVAILABLE_COUNT))
+            .toList();
     }
 
     @Override

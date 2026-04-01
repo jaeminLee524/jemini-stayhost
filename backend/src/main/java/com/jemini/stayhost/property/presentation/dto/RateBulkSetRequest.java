@@ -15,17 +15,17 @@ import java.util.List;
 
 @Schema(description = "요금 일괄 설정 요청")
 public record RateBulkSetRequest(
-        @Schema(description = "시작일", example = "2026-04-01")
-        @NotNull LocalDate startDate,
+    @Schema(description = "시작일", example = "2026-04-01")
+    @NotNull LocalDate startDate,
 
-        @Schema(description = "종료일", example = "2026-04-30")
-        @NotNull LocalDate endDate,
+    @Schema(description = "종료일", example = "2026-04-30")
+    @NotNull LocalDate endDate,
 
-        @Schema(description = "요금", example = "150000")
-        @NotNull @Positive BigDecimal price,
+    @Schema(description = "요금", example = "150000")
+    @NotNull @Positive BigDecimal price,
 
-        @Schema(description = "적용 요일 (1=월, 7=일). 생략 시 전체 날짜에 적용", example = "[1,2,3,4,5]")
-        List<Integer> daysOfWeek
+    @Schema(description = "적용 요일 (1=월, 7=일). 생략 시 전체 날짜에 적용", example = "[1,2,3,4,5]")
+    List<Integer> daysOfWeek
 ) {
 
     private static final int MAX_DATE_RANGE_DAYS = 30;
@@ -33,11 +33,11 @@ public record RateBulkSetRequest(
     public RateBulkSetCommand toCommand() {
         validateDateRange();
         return RateBulkSetCommand.builder()
-                .startDate(this.startDate)
-                .endDate(this.endDate)
-                .price(this.price)
-                .daysOfWeek(this.daysOfWeek)
-                .build();
+            .startDate(this.startDate)
+            .endDate(this.endDate)
+            .price(this.price)
+            .daysOfWeek(this.daysOfWeek)
+            .build();
     }
 
     private void validateDateRange() {

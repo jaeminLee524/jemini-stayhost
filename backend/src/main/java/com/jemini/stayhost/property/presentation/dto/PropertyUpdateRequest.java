@@ -24,13 +24,13 @@ public record PropertyUpdateRequest(
     @Size(max = 500) String thumbnailUrl
 ) {
 
-  public PropertyUpdateCommand toCommand() {
-    return PropertyUpdateCommand.builder()
-        .name(this.name)
-        .description(this.description)
-        .checkInTime(this.checkInTime)
-        .checkOutTime(this.checkOutTime)
-        .thumbnailUrl(this.thumbnailUrl)
-        .build();
-  }
+    public PropertyUpdateCommand toCommand() {
+        return PropertyUpdateCommand.builder()
+            .name(this.name)
+            .description(this.description)
+            .checkInTime(this.checkInTime)
+            .checkOutTime(this.checkOutTime)
+            .thumbnailUrl(this.thumbnailUrl)
+            .build();
+    }
 }

@@ -20,7 +20,7 @@ public class SupplierReaderImpl implements SupplierReader {
     @Override
     public Supplier getById(final Long id) {
         return supplierRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.SUPPLIER_NOT_FOUND));
+            .orElseThrow(() -> new NotFoundException(ErrorCode.SUPPLIER_NOT_FOUND));
     }
 
     @Override

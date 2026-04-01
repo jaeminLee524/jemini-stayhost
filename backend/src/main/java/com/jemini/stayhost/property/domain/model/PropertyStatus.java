@@ -7,9 +7,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PropertyStatus {
 
-  ACTIVE("노출 중"),
-  INACTIVE("비노출"),
-  ;
+    ACTIVE("노출 중"),
+    INACTIVE("비노출"),
+    ;
 
-  private final String description;
+    private final String description;
 }

@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 
 @Builder
 public record PropertyResult(
@@ -25,19 +24,10 @@ public record PropertyResult(
     LocalTime checkOutTime,
     String thumbnailUrl,
     String status,
-    List<ImageResult> images,
+    List<PropertyImageResult> images,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {
-
-    @Builder
-    public record ImageResult(
-        Long id,
-        String imageUrl,
-        Integer sortOrder
-    ) {
-
-    }
 
     public static PropertyResult from(final Property property) {
         return PropertyResult.builder()
@@ -60,14 +50,14 @@ public record PropertyResult(
             .build();
     }
 
-    private static List<ImageResult> toPropertyImages(List<PropertyImage> images) {
+    private static List<PropertyImageResult> toPropertyImages(List<PropertyImage> images) {
         return images.stream()
             .map(PropertyResult::toPropertyImage)
             .toList();
     }
 
-    private static ImageResult toPropertyImage(PropertyImage img) {
-        return ImageResult.builder()
+    private static PropertyImageResult toPropertyImage(PropertyImage img) {
+        return PropertyImageResult.builder()
             .id(img.getId())
             .imageUrl(img.getImageUrl())
             .sortOrder(img.getSortOrder())

@@ -7,9 +7,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum RoomTypeStatus {
 
-  ACTIVE("판매 중"),
-  INACTIVE("판매 중지"),
-  ;
+    ACTIVE("판매 중"),
+    INACTIVE("판매 중지"),
+    ;
 
-  private final String description;
+    private final String description;
 }

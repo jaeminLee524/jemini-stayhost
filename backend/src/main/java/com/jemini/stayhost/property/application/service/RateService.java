@@ -44,9 +44,9 @@ public class RateService {
      */
     @Transactional
     public RateBulkSetResult bulkSet(
-            final Long roomTypeId,
-            final Long partnerId,
-            final RateBulkSetCommand command
+        final Long roomTypeId,
+        final Long partnerId,
+        final RateBulkSetCommand command
     ) {
         validateOwnership(roomTypeId, partnerId);
         validateDateRange(command.startDate(), command.endDate());
@@ -65,10 +65,10 @@ public class RateService {
      */
     @Transactional(readOnly = true)
     public RateListResult getRates(
-            final Long roomTypeId,
-            final Long partnerId,
-            final LocalDate startDate,
-            final LocalDate endDate
+        final Long roomTypeId,
+        final Long partnerId,
+        final LocalDate startDate,
+        final LocalDate endDate
     ) {
         validateOwnership(roomTypeId, partnerId);
         validateDateRange(startDate, endDate);
@@ -99,35 +99,35 @@ public class RateService {
         final Map<LocalDate, Rate> existing = loadExistingRates(roomTypeId, command.startDate(), command.endDate());
 
         return dates.stream()
-                .map(date -> upsertSingle(roomTypeId, date, command.price(), existing))
-                .toList();
+            .map(date -> upsertSingle(roomTypeId, date, command.price(), existing))
+            .toList();
     }
 
     private List<LocalDate> generateDates(
-            final LocalDate startDate,
-            final LocalDate endDate,
-            final List<Integer> daysOfWeek
+        final LocalDate startDate,
+        final LocalDate endDate,
+        final List<Integer> daysOfWeek
     ) {
         return dateRangeInclusive(startDate, endDate).stream()
-                .filter(date -> daysOfWeek == null || daysOfWeek.isEmpty() || daysOfWeek.contains(date.getDayOfWeek().getValue()))
-                .toList();
+            .filter(date -> daysOfWeek == null || daysOfWeek.isEmpty() || daysOfWeek.contains(date.getDayOfWeek().getValue()))
+            .toList();
     }
 
     private Map<LocalDate, Rate> loadExistingRates(
-            final Long roomTypeId,
-            final LocalDate startDate,
-            final LocalDate endDate
+        final Long roomTypeId,
+        final LocalDate startDate,
+        final LocalDate endDate
     ) {
         return rateReader.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate)
-                .stream()
-                .collect(toMap(Rate::getDate, r -> r));
+            .stream()
+            .collect(toMap(Rate::getDate, r -> r));
     }
 
     private Rate upsertSingle(
-            final Long roomTypeId,
-            final LocalDate date,
-            final BigDecimal price,
-            final Map<LocalDate, Rate> existing
+        final Long roomTypeId,
+        final LocalDate date,
+        final BigDecimal price,
+        final Map<LocalDate, Rate> existing
     ) {
         final Rate rate = existing.get(date);
         if (rate != null) {
@@ -138,16 +138,16 @@ public class RateService {
     }
 
     private RateBulkSetResult buildBulkSetResult(
-            final Long roomTypeId,
-            final int appliedDates,
-            final RateBulkSetCommand command
+        final Long roomTypeId,
+        final int appliedDates,
+        final RateBulkSetCommand command
     ) {
         return RateBulkSetResult.builder()
-                .roomTypeId(roomTypeId)
-                .appliedDates(appliedDates)
-                .startDate(command.startDate())
-                .endDate(command.endDate())
-                .price(command.price())
-                .build();
+            .roomTypeId(roomTypeId)
+            .appliedDates(appliedDates)
+            .startDate(command.startDate())
+            .endDate(command.endDate())
+            .price(command.price())
+            .build();
     }
 }

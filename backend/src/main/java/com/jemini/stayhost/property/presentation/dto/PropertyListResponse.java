@@ -26,14 +26,14 @@ public record PropertyListResponse(
     String thumbnailUrl
 ) {
 
-  public static PropertyListResponse from(final PropertyResult result) {
-    return PropertyListResponse.builder()
-        .id(result.id())
-        .name(result.name())
-        .region(result.region())
-        .type(result.type())
-        .status(result.status())
-        .thumbnailUrl(result.thumbnailUrl())
-        .build();
-  }
+    public static PropertyListResponse from(final PropertyResult result) {
+        return PropertyListResponse.builder()
+            .id(result.id())
+            .name(result.name())
+            .region(result.region())
+            .type(result.type())
+            .status(result.status())
+            .thumbnailUrl(result.thumbnailUrl())
+            .build();
+    }
 }

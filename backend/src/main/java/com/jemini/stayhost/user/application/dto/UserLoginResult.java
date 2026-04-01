@@ -10,4 +10,5 @@ public record UserLoginResult(
     String email,
     String name
 ) {
+
 }

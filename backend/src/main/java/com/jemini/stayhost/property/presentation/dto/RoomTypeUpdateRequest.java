@@ -26,13 +26,13 @@ public record RoomTypeUpdateRequest(
     List<String> amenities
 ) {
 
-  public RoomTypeUpdateCommand toCommand() {
-    return RoomTypeUpdateCommand.builder()
-        .name(this.name)
-        .description(this.description)
-        .maxOccupancy(this.maxOccupancy)
-        .basePrice(this.basePrice)
-        .amenities(this.amenities)
-        .build();
-  }
+    public RoomTypeUpdateCommand toCommand() {
+        return RoomTypeUpdateCommand.builder()
+            .name(this.name)
+            .description(this.description)
+            .maxOccupancy(this.maxOccupancy)
+            .basePrice(this.basePrice)
+            .amenities(this.amenities)
+            .build();
+    }
 }

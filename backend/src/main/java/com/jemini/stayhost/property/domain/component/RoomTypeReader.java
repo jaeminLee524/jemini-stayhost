@@ -6,11 +6,11 @@ import java.util.List;
 
 public interface RoomTypeReader {
 
-  RoomType getById(Long id);
+    RoomType getById(Long id);
 
-  List<RoomType> findByPropertyId(Long propertyId);
+    List<RoomType> findByPropertyId(Long propertyId);
 
-  List<RoomType> findActiveByPropertyId(Long propertyId);
+    List<RoomType> findActiveByPropertyId(Long propertyId);
 
-  List<RoomType> findActiveByPropertyIds(List<Long> propertyIds);
+    List<RoomType> findActiveByPropertyIds(List<Long> propertyIds);
 }

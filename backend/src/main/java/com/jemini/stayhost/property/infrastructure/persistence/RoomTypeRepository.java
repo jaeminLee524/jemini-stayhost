@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface RoomTypeRepository extends JpaRepository<RoomType, Long> {
 
-  List<RoomType> findByPropertyId(Long propertyId);
+    List<RoomType> findByPropertyId(Long propertyId);
 
-  List<RoomType> findByPropertyIdAndStatus(Long propertyId, RoomTypeStatus status);
+    List<RoomType> findByPropertyIdAndStatus(Long propertyId, RoomTypeStatus status);
 
-  List<RoomType> findByPropertyIdInAndStatus(List<Long> propertyIds, RoomTypeStatus status);
+    List<RoomType> findByPropertyIdInAndStatus(List<Long> propertyIds, RoomTypeStatus status);
 }

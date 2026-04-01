@@ -8,26 +8,23 @@ public record UserLoginResponse(
     String accessToken,
     String tokenType,
     long expiresIn,
-    UserInfo user
+    UserInfoResponse user
 ) {
-
-    @Builder
-    public record UserInfo(
-        Long id,
-        String email,
-        String name
-    ) {}
 
     public static UserLoginResponse from(final UserLoginResult result) {
         return UserLoginResponse.builder()
             .accessToken(result.accessToken())
             .tokenType("Bearer")
             .expiresIn(result.expiresIn())
-            .user(UserInfo.builder()
-                .id(result.userId())
-                .email(result.email())
-                .name(result.name())
-                .build())
+            .user(mapToUserInfo(result))
+            .build();
+    }
+
+    private static UserInfoResponse mapToUserInfo(UserLoginResult result) {
+        return UserInfoResponse.builder()
+            .id(result.userId())
+            .email(result.email())
+            .name(result.name())
             .build();
     }
 }

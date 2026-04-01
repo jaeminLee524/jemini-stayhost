@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface PropertyRepository extends JpaRepository<Property, Long> {
 
-  Page<Property> findByPartnerId(Long partnerId, Pageable pageable);
+    Page<Property> findByPartnerId(Long partnerId, Pageable pageable);
 
-  Optional<Property> findByIdAndStatus(Long id, PropertyStatus status);
+    Optional<Property> findByIdAndStatus(Long id, PropertyStatus status);
 }

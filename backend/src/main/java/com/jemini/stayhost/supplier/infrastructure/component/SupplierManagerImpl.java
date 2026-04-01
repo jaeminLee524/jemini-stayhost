@@ -32,7 +32,7 @@ public class SupplierManagerImpl implements SupplierManager {
 
     /**
      * 동기화 작업 이력을 독립 트랜잭션으로 저장한다.
-     * 외부 트랜잭션이 롤백되더라도 FAILED/COMPLETED 상태가 유실되지 않도록 보장한다.
+     * <p> 외부 트랜잭션이 롤백되더라도 FAILED/COMPLETED 상태가 유실되지 않도록 보장한다.
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)

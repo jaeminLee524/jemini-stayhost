@@ -7,7 +7,9 @@ public record PropertyUpdatedEvent(
     Long propertyId
 ) {
 
-    public static PropertyUpdatedEvent create(final Long propertyId) {
+    public static PropertyUpdatedEvent create(
+        final Long propertyId
+    ) {
         return PropertyUpdatedEvent.builder()
             .propertyId(propertyId)
             .build();

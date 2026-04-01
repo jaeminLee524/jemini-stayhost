@@ -1,4 +1,4 @@
-package com.jemini.stayhost.channel.infrastructure.adapter;
+package com.jemini.stayhost.channel.infrastructure.component;
 
 import com.jemini.stayhost.channel.domain.component.ChannelAdapter;
 import com.jemini.stayhost.channel.domain.dto.ChannelSyncResult;

@@ -7,4 +7,5 @@ public record UserLoginCommand(
     String email,
     String password
 ) {
+
 }

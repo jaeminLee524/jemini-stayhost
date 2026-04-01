@@ -6,10 +6,11 @@ import java.time.LocalDate;
 
 @Builder
 public record InventoryBulkSetResult(
-        Long roomTypeId,
-        int appliedDates,
-        LocalDate startDate,
-        LocalDate endDate,
-        int totalCount
+    Long roomTypeId,
+    int appliedDates,
+    LocalDate startDate,
+    LocalDate endDate,
+    int totalCount
 ) {
+
 }

@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RoomTypeManagerImpl implements RoomTypeManager {
 
-  private final RoomTypeRepository roomTypeRepository;
+    private final RoomTypeRepository roomTypeRepository;
 
-  @Override
-  public RoomType save(final RoomType roomType) {
-    return roomTypeRepository.save(roomType);
-  }
+    @Override
+    public RoomType save(final RoomType roomType) {
+        return roomTypeRepository.save(roomType);
+    }
 }
