@@ -181,5 +181,5 @@ docker compose down -v
 ## 과정 기록서 (Progress Journal)
 
 - [과정 기록서](docs/journal/progress-journal.md)
-- [핵심 기능 기술적 의사결정](docs/journal/feature.md)
+- [핵심 기능 기술적 의사결정](docs/journal/design-decisions.md)
 - [타사 OTA 플랫폼 리서치](docs/research/)
