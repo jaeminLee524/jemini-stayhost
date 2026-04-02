@@ -143,9 +143,70 @@ class ReservationConcurrencyTest extends IntegrationTestBase {
 
     @Test
     @Order(3)
+    @DisplayName("3박 멀티 나이트 동시 예약시 재고 5개이면 5명만 성공하고 데드락이 발생하지 않는다")
+    void 멀티_나이트_동시_예약시_재고만큼만_성공하고_데드락이_발생하지_않는다() throws InterruptedException {
+        final LocalDate checkIn = LocalDate.now().plusDays(7);
+        final LocalDate checkOut = checkIn.plusDays(3); // 3박
+
+        // 3박 전체 날짜에 재고 5로 설정
+        setInventory(propertyData.partnerToken(), propertyData.roomTypeId(), checkIn, checkOut, 5);
+
+        final int threadCount = 30;
+        final CountDownLatch readyLatch = new CountDownLatch(threadCount);
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+        final AtomicInteger successCount = new AtomicInteger(0);
+        final AtomicInteger failCount = new AtomicInteger(0);
+        final AtomicInteger deadlockCount = new AtomicInteger(0);
+
+        final List<Future<?>> futures = new ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            futures.add(executor.submit(() -> {
+                readyLatch.countDown();
+                try {
+                    startLatch.await();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+
+                final ResponseEntity<String> response = requestCreateReservation(
+                        userToken, propertyData.propertyId(), propertyData.roomTypeId(), checkIn, checkOut, 2);
+
+                if (response.getStatusCode().is2xxSuccessful()) {
+                    successCount.incrementAndGet();
+                } else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
+                    deadlockCount.incrementAndGet();
+                } else {
+                    failCount.incrementAndGet();
+                }
+            }));
+        }
+
+        readyLatch.await();
+        startLatch.countDown();
+
+        for (final Future<?> future : futures) {
+            try {
+                future.get(30, TimeUnit.SECONDS);
+            } catch (final ExecutionException | TimeoutException e) {
+                failCount.incrementAndGet();
+            }
+        }
+        executor.shutdown();
+
+        assertThat(deadlockCount.get()).as("데드락 발생 건수").isZero();
+        assertThat(successCount.get()).as("성공 건수").isEqualTo(5);
+        assertThat(failCount.get()).as("실패 건수").isEqualTo(threadCount - 5);
+    }
+
+    @Test
+    @Order(4)
     @DisplayName("동일 예약 동시 취소시 1번만 성공")
     void 동일_예약_동시_취소시_1번만_성공() throws InterruptedException {
-        final LocalDate checkIn = LocalDate.now().plusDays(5);
+        final LocalDate checkIn = LocalDate.now().plusDays(11);
         final LocalDate checkOut = checkIn.plusDays(1);
 
         // 재고 설정 및 예약 생성
