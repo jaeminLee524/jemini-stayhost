@@ -1,6 +1,7 @@
 package com.jemini.stayhost.booking.presentation.dto;
 
 import com.jemini.stayhost.booking.application.dto.CreateReservationCommand;
+import com.jemini.stayhost.common.logging.MaskField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -24,10 +25,10 @@ public record CreateReservationRequest(
     @NotNull LocalDate checkOutDate,
 
     @Schema(description = "투숙객 이름", example = "김민준")
-    @NotBlank @Size(max = 100) String guestName,
+    @NotBlank @Size(max = 100) @MaskField String guestName,
 
     @Schema(description = "투숙객 연락처", example = "010-1234-5678")
-    @Size(max = 20) String guestPhone,
+    @Size(max = 20) @MaskField String guestPhone,
 
     @Schema(description = "투숙 인원", example = "2")
     @NotNull @Min(1) Integer guestCount

@@ -1,6 +1,7 @@
 package com.jemini.stayhost.booking.presentation.dto;
 
 import com.jemini.stayhost.booking.application.dto.ReservationResult;
+import com.jemini.stayhost.common.logging.MaskField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -47,10 +48,10 @@ public record ReservationDetailResponse(
     LocalTime checkOutTime,
 
     @Schema(description = "투숙객 이름", example = "홍길동")
-    String guestName,
+    @MaskField String guestName,
 
     @Schema(description = "투숙객 연락처", example = "010-1234-5678")
-    String guestPhone,
+    @MaskField String guestPhone,
 
     @Schema(description = "투숙 인원", example = "2")
     int guestCount,
