@@ -13,7 +13,7 @@
 | 구분 | Method | Endpoint | 설명 | 상태 |
 |------|--------|----------|------|------|
 | 인증 | POST | `/api/public/extranet/auth/login` | 파트너 로그인 | BUILD |
-| 파트너 | POST | `/api/extranet/partners` | 파트너 등록 (인증 불필요) | BUILD |
+| 파트너 | POST | `/api/public/extranet/partners` | 파트너 등록 (인증 불필요) | BUILD |
 | 파트너 | GET | `/api/extranet/partners/me` | 내 파트너 정보 조회 | BUILD |
 | 파트너 | PUT | `/api/extranet/partners/me` | 파트너 정보 수정 | BUILD |
 | 숙소 | POST | `/api/extranet/properties` | 숙소 등록 | BUILD |
@@ -80,13 +80,13 @@
 
 ## 1. 공통 규약
 
-### 1.1 공통 응답 구조 (ApiResponse)
+### 1.1 공통 응답 구조 (ApiBaseResponse)
 
-모든 API는 다음 구조로 응답한다. 성공/실패 여부와 무관하게 HTTP 상태 코드와 `ApiResponse` 바디를 함께 반환한다.
+모든 API는 다음 구조로 응답한다. 성공/실패 여부와 무관하게 HTTP 상태 코드와 ApiBaseResponse 바디를 함께 반환한다.
 
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": { },
   "error": null
 }
@@ -96,7 +96,7 @@
 
 ```json
 {
-  "success": false,
+  "result": "ERROR",
   "data": null,
   "error": {
     "code": "INVENTORY_EXHAUSTED",
@@ -107,9 +107,10 @@
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| success | boolean | 요청 처리 성공 여부 |
+| result | String (enum) | 요청 처리 결과. SUCCESS 또는 ERROR |
 | data | Object / Array / null | 성공 시 응답 데이터 |
-| error.code | String | 오류 코드 (비즈니스 레벨) |
+| error | Object / null | 실패 시 오류 정보 |
+| error.code | String | ErrorCode enum의 name() 값 |
 | error.message | String | 사람이 읽을 수 있는 오류 메시지 |
 
 ### 1.2 HTTP 상태 코드 규약
@@ -142,7 +143,7 @@ Authorization: Bearer <token>
 #### 인증이 필요 없는 엔드포인트
 
 - `POST /api/public/extranet/auth/login`
-- `POST /api/extranet/partners` (파트너 등록)
+- `POST /api/public/extranet/partners` (파트너 등록)
 - `POST /api/public/users/signup`
 - `POST /api/public/users/login`
 - `GET /api/public/search/properties`
@@ -162,7 +163,7 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [ ],
     "page": 0,
@@ -209,7 +210,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
     "tokenType": "Bearer",
@@ -228,7 +229,7 @@ Response `200 OK`
 
 ### 2.2 파트너 관리
 
-#### POST /api/extranet/partners — [BUILD]
+#### POST /api/public/extranet/partners — [BUILD]
 
 파트너 등록. 인증 불필요(신규 가입).
 
@@ -250,7 +251,7 @@ Request
 Response `201 Created`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "partnerId": 10,
     "businessName": "㈜스테이호스트",
@@ -271,7 +272,7 @@ Response `201 Created`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 10,
     "businessName": "㈜스테이호스트",
@@ -307,7 +308,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 10,
     "phone": "02-9999-8888",
@@ -345,7 +346,7 @@ Request
 Response `201 Created`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 100,
     "name": "스테이호스트 서울 강남점",
@@ -372,7 +373,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {
@@ -403,7 +404,7 @@ Response `200 OK`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 100,
     "name": "스테이호스트 서울 강남점",
@@ -447,7 +448,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 100,
     "name": "스테이호스트 서울 강남점 (리뉴얼)",
@@ -473,7 +474,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 100,
     "status": "ACTIVE",
@@ -499,14 +500,15 @@ Request
   "maxOccupancy": 2,
   "basePrice": 120000,
   "amenities": ["WiFi", "TV", "에어컨", "냉장고"],
-  "totalRoomCount": 10
+  "totalRoomCount": 10,
+  "imageUrls": ["https://cdn.example.com/img/room1.jpg", "https://cdn.example.com/img/room2.jpg"]
 }
 ```
 
 Response `201 Created`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 200,
     "propertyId": 100,
@@ -514,7 +516,11 @@ Response `201 Created`
     "maxOccupancy": 2,
     "basePrice": 120000,
     "totalRoomCount": 10,
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "images": [
+      { "id": 1, "imageUrl": "https://cdn.example.com/img/room1.jpg", "sortOrder": 0 },
+      { "id": 2, "imageUrl": "https://cdn.example.com/img/room2.jpg", "sortOrder": 1 }
+    ]
   },
   "error": null
 }
@@ -529,7 +535,7 @@ Response `201 Created`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": [
     {
       "id": 200,
@@ -538,7 +544,10 @@ Response `200 OK`
       "basePrice": 120000,
       "amenities": ["WiFi", "TV", "에어컨", "냉장고"],
       "totalRoomCount": 10,
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "images": [
+        { "id": 1, "imageUrl": "https://cdn.example.com/img/room1.jpg", "sortOrder": 0 }
+      ]
     },
     {
       "id": 201,
@@ -547,7 +556,8 @@ Response `200 OK`
       "basePrice": 180000,
       "amenities": ["WiFi", "TV", "에어컨", "냉장고", "욕조"],
       "totalRoomCount": 5,
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "images": []
     }
   ],
   "error": null
@@ -567,18 +577,22 @@ Request
   "description": "새롭게 리뉴얼된 객실입니다.",
   "maxOccupancy": 2,
   "basePrice": 130000,
-  "amenities": ["WiFi", "TV", "에어컨", "냉장고", "스마트 TV"]
+  "amenities": ["WiFi", "TV", "에어컨", "냉장고", "스마트 TV"],
+  "imageUrls": ["https://cdn.example.com/img/room_new1.jpg"]
 }
 ```
 
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 200,
     "name": "스탠다드 더블 (개선)",
     "basePrice": 130000,
+    "images": [
+      { "id": 3, "imageUrl": "https://cdn.example.com/img/room_new1.jpg", "sortOrder": 0 }
+    ],
     "updatedAt": "2026-03-28T12:00:00"
   },
   "error": null
@@ -608,7 +622,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "roomTypeId": 200,
     "appliedDates": 22,
@@ -636,7 +650,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "roomTypeId": 200,
     "rates": [
@@ -674,7 +688,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "roomTypeId": 200,
     "appliedDates": 30,
@@ -702,7 +716,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "roomTypeId": 200,
     "inventory": [
@@ -748,7 +762,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {
@@ -787,7 +801,7 @@ Response `200 OK`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 5001,
     "reservationNumber": "RSV-20260328-5001",
@@ -827,7 +841,7 @@ Request (body 없음)
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 5001,
     "status": "CONFIRMED",
@@ -866,7 +880,7 @@ Request
 Response `201 Created`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 3001,
     "email": "user@example.com",
@@ -893,7 +907,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
     "tokenType": "Bearer",
@@ -917,7 +931,7 @@ Response `200 OK`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 3001,
     "email": "user@example.com",
@@ -959,7 +973,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {
@@ -1006,7 +1020,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "propertyId": 100,
     "roomTypes": [
@@ -1049,7 +1063,7 @@ Response `200 OK`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 100,
     "name": "스테이호스트 서울 강남점",
@@ -1073,7 +1087,10 @@ Response `200 OK`
         "description": "편안한 더블 침대가 있는 표준 객실입니다.",
         "maxOccupancy": 2,
         "basePrice": 120000,
-        "amenities": ["WiFi", "TV", "에어컨", "냉장고"]
+        "amenities": ["WiFi", "TV", "에어컨", "냉장고"],
+        "images": [
+          { "imageUrl": "https://cdn.example.com/img/room1.jpg", "sortOrder": 0 }
+        ]
       },
       {
         "id": 201,
@@ -1081,7 +1098,8 @@ Response `200 OK`
         "description": "트윈 침대 구성의 넓은 객실입니다.",
         "maxOccupancy": 3,
         "basePrice": 180000,
-        "amenities": ["WiFi", "TV", "에어컨", "냉장고", "욕조"]
+        "amenities": ["WiFi", "TV", "에어컨", "냉장고", "욕조"],
+        "images": []
       }
     ]
   },
@@ -1124,7 +1142,7 @@ Request
 Response `201 Created`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 5001,
     "reservationNumber": "RSV-20260328-5001",
@@ -1150,7 +1168,7 @@ Response `201 Created`
 실패 예시 `409 Conflict`
 ```json
 {
-  "success": false,
+  "result": "ERROR",
   "data": null,
   "error": {
     "code": "INVENTORY_EXHAUSTED",
@@ -1176,7 +1194,7 @@ Query Parameters
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {
@@ -1212,7 +1230,7 @@ Response `200 OK`
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 5001,
     "reservationNumber": "RSV-20260328-5001",
@@ -1259,7 +1277,7 @@ Request
 Response `200 OK`
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "id": 5001,
     "reservationNumber": "RSV-20260328-5001",
@@ -1291,7 +1309,7 @@ Query Parameters: `status`, `page`, `size`
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {
@@ -1326,7 +1344,7 @@ Request
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": { "id": 10, "status": "ACTIVE", "updatedAt": "2026-03-28T13:00:00" },
   "error": null
 }
@@ -1386,7 +1404,7 @@ Request
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "channelId": 1,
     "syncLogId": 9001,
@@ -1418,7 +1436,7 @@ Request
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": { "channelId": 1, "syncLogId": 9002, "status": "SUCCESS" },
   "error": null
 }
@@ -1450,7 +1468,7 @@ Request (채널별 스키마 상이 — 내부에서 표준화 처리)
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "reservationId": 5002,
     "reservationNumber": "RSV-20260328-5002",
@@ -1469,7 +1487,7 @@ Response 예시
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "channelId": 1,
     "channelName": "Booking.com",
@@ -1514,7 +1532,7 @@ Request
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "syncJobId": 7001,
     "status": "RUNNING",
@@ -1535,7 +1553,7 @@ Query Parameters: `mappingStatus` (MAPPED/UNMAPPED/CONFLICT), `page`, `size`
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {
@@ -1567,7 +1585,7 @@ Request
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "supplierPropertyId": 8001,
     "propertyId": 100,
@@ -1589,7 +1607,7 @@ Query Parameters: `status`, `page`, `size`
 Response 예시
 ```json
 {
-  "success": true,
+  "result": "SUCCESS",
   "data": {
     "content": [
       {

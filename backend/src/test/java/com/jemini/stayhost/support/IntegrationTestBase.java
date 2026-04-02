@@ -111,7 +111,7 @@ public abstract class IntegrationTestBase {
                 "loginId", loginId,
                 "password", password
         );
-        final ResponseEntity<String> response = restTemplate.postForEntity("/api/extranet/partners", entity(body), String.class);
+        final ResponseEntity<String> response = restTemplate.postForEntity("/api/public/extranet/partners", entity(body), String.class);
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         final Long partnerId = getData(response).get("partnerId").asLong();
 
