@@ -101,9 +101,9 @@ presentation → application → domain ← infrastructure
                                           (DIP 역전)
 ```
 
-- domain: JPA 어노테이션(`@Entity`, `@Id`, `@Column` 등 `jakarta.persistence` 패키지)만 허용한다. Spring 프레임워크(`@Service`, `@Component`, `@Autowired` 등)에는 의존하지 않는다. Repository 인터페이스와 Reader/Manager 인터페이스(도구 계약)를 정의한다
+- domain: JPA 어노테이션(`@Entity`, `@Id`, `@Column` 등 `jakarta.persistence` 패키지)만 허용한다. Spring 프레임워크(`@Service`, `@Component`, `@Autowired` 등)에는 의존하지 않는다. Reader/Manager 인터페이스(도구 계약)를 정의한다
 - application: domain의 Reader/Manager 인터페이스에만 의존한다. Repository를 직접 사용하지 않고, Reader(읽기)/Manager(쓰기)를 통해서만 데이터에 접근한다
-- infrastructure: domain의 Repository 인터페이스와 Reader/Manager 인터페이스를 구현(Adapter) 한다. Reader/Manager 구현체가 JPA Repository를 내부적으로 사용한다. 기술 의존성은 이 계층에만 존재한다
+- infrastructure: domain의 Reader/Manager 인터페이스를 구현(Adapter) 한다. Reader/Manager 구현체가 JPA Repository를 내부적으로 사용한다. Repository 인터페이스와 기술 의존성은 이 계층에만 존재한다
 
 ```
 presentation → application(Service/Facade)
@@ -471,10 +471,9 @@ public record PageResult<T>(
 }
 ```
 
-응답 예시:
+성공 응답:
 
 ```json
-// 성공
 {
   "result": "SUCCESS",
   "data": {
@@ -484,8 +483,11 @@ public record PageResult<T>(
   },
   "error": null
 }
+```
 
-// 실패
+에러 응답:
+
+```json
 {
   "result": "ERROR",
   "data": null,

@@ -58,8 +58,8 @@
 
 분산 락(Redis Redisson)도 고려했으나 채택하지 않았다.
 
-- 단일 DB 환경에서 DB 자체의 락 메커니즘이 가장 확정적이고 추가 인프라가 필요 없다
-- Redis를 별도로 운영하면 Redis 장애 시 예약 자체가 불가능해지는 단일 장애점이 생긴다
+- 단일 DB 환경이라는 가정하에 DB 자체의 락 메커니즘이 가장 확정적이고 추가 인프라가 필요 없다
+- Redis를 별도로 운영하면 Redis 장애 시 failover 처리가 필요해진다
 - MySQL InnoDB의 행 수준 락은 이미 충분히 성숙한 메커니즘이다
 
 ### 2.2 MySQL InnoDB 행 수준 락 동작
@@ -84,28 +84,7 @@ InnoDB는 `SELECT ... FOR UPDATE` 실행 시 해당 행에 Exclusive Lock (X-Loc
 - 다른 객실, 다른 날짜의 예약은 완전히 병렬로 처리된다
 - 락 대기 타임아웃은 MySQL `innodb_lock_wait_timeout`(기본 50초)에 의해 제어되며, 애플리케이션 레벨에서 별도 타임아웃을 설정해 사용자 경험을 보호한다
 
-### 2.3 예약 처리 플로우 (단일 트랜잭션)
-
-```mermaid
-flowchart TD
-    A[고객 예약 요청] --> B
-
-    B["1. 트랜잭션 시작\nSELECT * FROM inventory\nWHERE room_type_id = :roomTypeId\n  AND date BETWEEN :checkIn AND :checkOut - 1\nORDER BY room_type_id, date\nFOR UPDATE\n← 비관적 락: X-Lock 획득 / 정렬 순서 고정으로 데드락 방지"]
-
-    B --> C{모든 날짜\n재고 충분?}
-    C -- NO --> D[트랜잭션 롤백\n→ 400 FAILED 재고 부족]
-    C -- YES --> E
-
-    E["2. 재고 차감 원자적\nUPDATE inventory\nSET reserved_count = reserved_count + 1\nWHERE room_type_id = :roomTypeId\n  AND date BETWEEN :checkIn AND :checkOut - 1"]
-
-    E --> F["3. Reservation CONFIRMED 생성\n← 동일 트랜잭션 내 즉시 확정\nstatus = 'CONFIRMED'\nconfirmed_at = NOW()\n날짜별 요금 스냅샷 저장 ReservationItem"]
-
-    F --> G["4. 트랜잭션 커밋\n→ X-Lock 해제\n→ ReservationCreatedEvent 발행\n→ 채널 매니저 비동기 동기화 트리거 트랜잭션 외부\n← @TransactionalEventListener AFTER_COMMIT"]
-```
-
-자동 확정 정책: 재고 차감 성공 = 즉시 CONFIRMED. PENDING 단계가 없다. 파트너 수동 확정 흐름은 별도 DESIGN-ONLY 문서에서 다루며, 기본 구현은 자동 확정이다. PENDING 상태가 없으므로 만료 스케줄러도 불필요하다.
-
-### 2.4 멀티 나이트 예약의 데드락 방지
+### 2.3 멀티 나이트 예약의 데드락 방지
 
 2박 이상의 예약은 여러 inventory 행을 동시에 잠근다. 두 트랜잭션이 서로 다른 순서로 행을 잠그면 순환 대기(circular wait)로 데드락이 발생할 수 있다.
 
@@ -134,7 +113,7 @@ FOR UPDATE;
 
 Spring Data JPA에서는 `@Lock(LockModeType.PESSIMISTIC_WRITE)`와 `@Query`에 `ORDER BY` 절을 명시적으로 포함시켜야 한다.
 
-### 2.5 외부 채널 통신과 트랜잭션 경계
+### 2.4 외부 채널 통신과 트랜잭션 경계
 
 예약 생성 시 OTA 채널들에도 재고 변경을 알려야 한다. 그런데 채널 API 호출을 트랜잭션 내부에 포함시키면 심각한 문제가 생긴다.
 
@@ -189,108 +168,9 @@ Spring Data JPA에서는 `@Lock(LockModeType.PESSIMISTIC_WRITE)`와 `@Query`에 
 
 ---
 
-## 4. 대규모 요금 조회: 캐시 + 커버링 인덱스
+## 6. 고민 포인트 정리
 
-요금 조회는 읽기 전용이므로 재고와 달리 캐싱이 가능하다. 상세 캐시 전략은 [05-cache-strategy.md](./05-cache-strategy.md)에서 다루며, 여기서는 동시성 관점에서의 핵심만 정리한다.
-
-```mermaid
-flowchart TD
-    A[대규모 요금 조회 요청\n100명 동시 / 30일 범위] --> B
-
-    B["Caffeine 로컬 캐시\nrate:{roomTypeId}:{date}"]
-    B -- "Cache Hit (TTL 3분)" --> C[DB 쿼리 없이 즉시 응답]
-    B -- "Cache Miss (최초 또는 TTL 만료)" --> D
-
-    D["MySQL 커버링 인덱스 쿼리\nINDEX idx_rate_covering(room_type_id, date, price, status)\n→ 인덱스만으로 응답 가능, 테이블 접근 없음"]
-
-    D --> E[캐시에 저장 TTL 3분\n→ 이후 동일 요청은 캐시 응답]
-```
-
-재고(inventory)는 캐싱하지 않는다. 예약 가능 여부는 항상 실시간으로 확인해야 하므로 정합성을 캐시 히트율보다 우선한다.
-
----
-
-## 5. 테스트 전략
-
-동시성 테스트 시나리오와 부하 테스트 계획은 [12-test-strategy.md](12-test-strategy.md)에서 별도로 다룬다.
-
----
-
-## 6. 구현 핵심 코드 패턴
-
-### 6.1 Repository: 비관적 락 쿼리
-
-```java
-public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-        SELECT i FROM Inventory i
-        WHERE i.roomTypeId = :roomTypeId
-          AND i.date BETWEEN :checkIn AND :checkOut
-        ORDER BY i.roomTypeId, i.date
-        """)
-    List<Inventory> findAndLockByRoomTypeIdAndDateRange(
-        @Param("roomTypeId") Long roomTypeId,
-        @Param("checkIn") LocalDate checkIn,
-        @Param("checkOut") LocalDate checkOut
-    );
-}
-```
-
-### 6.2 Service: 단일 트랜잭션 예약 처리
-
-```java
-@Service
-@RequiredArgsConstructor
-public class ReservationService {
-
-    private final InventoryRepository inventoryRepository;
-    private final ReservationRepository reservationRepository;
-    private final ApplicationEventPublisher eventPublisher;
-
-    @Transactional
-    public Reservation createReservation(ReservationCreateCommand command) {
-        LocalDate checkOut = command.checkOutDate().minusDays(1); // 체크아웃 전날까지 차감
-
-        // 1. 비관적 락으로 재고 행 잠금 (ORDER BY 보장됨)
-        List<Inventory> inventories = inventoryRepository
-            .findAndLockByRoomTypeIdAndDateRange(
-                command.roomTypeId(),
-                command.checkInDate(),
-                checkOut
-            );
-
-        // 2. 재고 충분성 검증 (하나라도 부족하면 예외)
-        inventories.forEach(inv -> {
-            if (inv.getAvailableCount() <= 0) {
-                throw new InsufficientInventoryException(
-                    "재고 부족: roomTypeId=" + inv.getRoomTypeId()
-                    + ", date=" + inv.getDate()
-                );
-            }
-        });
-
-        // 3. 재고 차감
-        inventories.forEach(Inventory::decreaseAvailable);
-
-        // 4. 예약 CONFIRMED 생성 (동일 트랜잭션)
-        Reservation reservation = Reservation.createConfirmed(command, inventories);
-        reservationRepository.save(reservation);
-
-        // 5. 트랜잭션 커밋 후 이벤트 발행 (AFTER_COMMIT)
-        eventPublisher.publishEvent(new ReservationCreatedEvent(reservation.getId()));
-
-        return reservation;
-    }
-}
-```
-
----
-
-## 7. 고민 포인트 정리
-
-### 7.1 왜 낙관적 락을 버렸는가
+### 6.1 왜 낙관적 락을 버렸는가
 
 처음에는 낙관적 락을 고려했다. 숙박 도메인은 평시에는 충돌이 적기 때문이다.
 
@@ -299,7 +179,7 @@ public class ReservationService {
 - 낙관적 락의 "충돌이 드물다"는 전제는 평시 트래픽에서는 맞지만, 인기 숙소의 마감 임박 시나리오나 이벤트성 특가 오픈에서는 전혀 성립하지 않는다
 - 플랫폼이 가장 중요하게 보호해야 하는 순간이 바로 이 고부하 시점이다
 
-### 7.2 비관적 락의 단점을 어떻게 완화했는가
+### 6.2 비관적 락의 단점을 어떻게 완화했는가
 
 비관적 락의 가장 큰 단점은 락을 오래 잡을수록 다른 트랜잭션의 대기 시간이 길어진다는 것이다.
 
@@ -307,7 +187,7 @@ public class ReservationService {
 - 채널 동기화, 알림 발송 등 외부 I/O가 필요한 모든 처리는 `@TransactionalEventListener(AFTER_COMMIT)`을 통해 트랜잭션 외부에서 비동기로 처리한다
 - 이를 통해 락 보유 시간을 순수 DB 작업(수 밀리초)으로 최소화한다
 
-### 7.3 Caffeine CAS + DB 비관적 락 2단계 전략
+### 6.3 Caffeine CAS + DB 비관적 락 2단계 전략
 
 단일 서버 환경에서 Caffeine의 CAS(Compare-And-Swap) 연산을 1차 필터로 활용하고, DB 비관적 락을 최종 방어선으로 유지하는 2단계 전략을 채택했다.
 
@@ -348,7 +228,7 @@ flowchart TD
 
 이 전략은 단일 JVM에서만 유효하다. 멀티 인스턴스 환경에서는 각 JVM의 AtomicInteger가 독립적이므로, Redis 기반 분산 카운터로 교체해야 한다. 현재 본 프로젝트는 단일 서버를 전제하므로 Caffeine CAS가 최적이다.
 
-### 7.4 Facade에 @Transactional을 걸지 않는 이유
+### 6.4 Facade에 @Transactional을 걸지 않는 이유
 
 예약 플로우에서 Facade는 읽기/검증 후 Service에 원자적 쓰기를 위임한다.
 
@@ -372,7 +252,7 @@ Service에만 `@Transactional`을 걸면 트랜잭션 경계가 "SELECT FOR UPDA
 
 - 하지만 이는 오히려 "어디서 커밋되는지"를 추적하기 쉽게 만드는 장점이 된다
 
-### 7.5 분산 락을 선택하지 않은 이유
+### 6.5 분산 락을 선택하지 않은 이유
 
 Redis Redisson 기반 분산 락도 검토했다. 분산 락은 DB에 부하를 주지 않고 락을 관리할 수 있으며, 미래 멀티 인스턴스 환경에서도 유효하다.
 

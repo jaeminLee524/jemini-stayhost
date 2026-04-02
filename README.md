@@ -39,7 +39,7 @@ cd jemini-stayhost
 # MySQL + Spring Boot 앱 기동 (초기 빌드 시 2~3분 소요)
 docker compose up -d
 
-# 기동 확인 (health: UP이면 정상)
+# 기동 확인
 curl -s http://localhost:8080/api/public/health
 ```
 
