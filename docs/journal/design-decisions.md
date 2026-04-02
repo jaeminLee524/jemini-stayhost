@@ -1,5 +1,5 @@
-# 기능 별 고민
-각 기능을 설계 및 개발하기 앞서 고려해야 할 사항들을 정리한 문서입니다.
+# 핵심 기능 설계 의사결정
+각 기능의 문제 정의, 대안 비교, 선택 근거를 기록한 문서다.
 
 - 전제
   - 전제를 정의해야지, 기능 구현의 범위를 산정할 수 있을 것 같았다.
@@ -10,7 +10,19 @@
 - 요금 조회는 숙소 검색과 함께 가장 빈번하게 발생하는 작업이므로, DB 부하를 줄이는 방안을 고민해야 한다.
 
 ### 1-2 자료조사
-- 현재 여기어때, 야놀자 등 국내 숙박 예약 플랫폼에서 요금 조회에 대한 검색 조건이 어떻게 되는지 조사한다.
+
+국내 주요 OTA 플랫폼의 검색 조건을 조사했다.
+
+| 플랫폼 | 초기 검색 조건 | 날짜/인원 기본값 | 비고 |
+|--------|-------------|---------------|------|
+| 여기어때 | 지역/숙소명 + 날짜 + 인원 | 기본 2명 | 처음부터 날짜 필수, 최대 30박까지 선택 가능 |
+| 야놀자(NOL) | 키워드만 입력 (날짜/인원 없음) | 검색 결과에서 1박2일, 2명이 자동 적용 | 초기 검색 시 날짜 없이 키워드만으로 진입 가능 |
+
+
+- 여기어때: 검색 시점부터 날짜와 인원을 명시하여, 결과에 바로 요금과 예약 가능 여부를 표시한다.
+- 야놀자: 검색 진입 장벽을 낮추기 위해 키워드만으로 검색을 시작하고, 결과 화면에서 날짜(1박)/인원(2명) 필터를 제공한다.
+
+`여기어때 방식을 참고하여 지역/키워드 + 날짜 범위(최대 30일)를 검색 조건으로 설계했다.`
 
 ### 1-3 문제 정의
 - 캐시 미적용시, 현재 구조상 아래의 극단적인 DB 쿼리가 발생할 수 있다.
@@ -18,15 +30,20 @@
 - 100명이면 초당 180,000 rate 조회가 발생한다.
 
 ### 1-4 해결 방안
- - 해당 프로젝트에서는 캐시 갱신의 주 수단을 이벤트 기반의 eviction 으로 설계했다.
- - TTL 은 안전망이다. 이벤트 누락 대비하여 5분으로 설정했다.
- - 캐시 구성은 아래와 같다.
+ - 캐시 갱신의 주 수단을 이벤트 기반 eviction으로 설계했다. TTL은 이벤트 누락 대비 안전망이다.
+ - 요금 조회는 N+1 개별 쿼리 대신 IN절 Bulk 쿼리 1회로 전환하고, 결과를 per-date 키로 캐시에 warm-up한다.
 
-| 캐시        | 키                   | TTL |
-|-----------|---------------------|-----|
-| property  | {propertyId}        | 3분  |
-| roomTypes | {propertyId}        | 3분  |
-| rate      | {roomTypeId}:{date} | 3분  |
+| 캐시 | 키 | TTL | 캐싱 방식 |
+|------|---|-----|----------|
+| search | {region, keyword, page, size} | 1분 | @Cacheable |
+| property | {propertyId} | 30분 | @Cacheable |
+| roomTypes | {propertyId} | 10분 | @Cacheable |
+| rate | {roomTypeId}:{date} | 3분 | 수동 warm-up |
+
+rate 캐시에 @Cacheable 대신 수동 warm-up을 사용하는 이유:
+  - 요금 조회는 날짜 범위 단위로 요청되지만, 캐시 키는 단일 날짜 단위다
+  - @Cacheable로 범위 쿼리를 캐싱하면 날짜 하나 변경 시 전체 범위 캐시를 무효화해야 한다
+  - per-date 키로 분해하면 변경된 날짜만 정밀하게 evict할 수 있다
 
 ### 1-5 검색 플로우 & 동시 요청 효과 & 캐시 무효화 전략
 
@@ -34,37 +51,33 @@
 
 - Phase 1: 검색 목록 (제주, 4/9-4/17)
   ```
-  1. 커버링 인덱스 -> 숙소 ID 20개(DB, 캐시 미적용)
-  2. RoomType 조회 (캐시 히트 or DB)
-  3. Rate 조회 (roomType 별 warm-up)
-            - Cold: 20개 숙소 * 3개 객실 유형 = 60개 DB 조회 후 캐시 적재
-            - Warm: 캐시에서 바로 조회(DB 조회 없음)
-  4. 숙소별 최저가 계산 후 응답
+  1. search 캐시 조회 → 히트 시 즉시 반환 (1분 TTL)
+  2. 캐시 미스 시: 커버링 인덱스 → 숙소 ID 20개 (DB)
+  3. RoomType IN 쿼리 → 숙소별 객실 유형 일괄 조회
+  4. 숙소별 최저가 계산 → 검색 결과 캐시 적재 → 응답
   ```
-  
-- Phase 2: 숙소 상세 클릭
+
+- Phase 2: 숙소 상세 + 요금 조회
   ```
   1. Property 조회 (캐시 히트)
   2. RoomType 조회 (캐시 히트)
-  3. Rate 조회 -> Phase 1에서 이미 캐시가 적재되어 있으므로 DB 조회 없음
-  4. Inventory 조회 (DB 조회, 캐시 미적용 대상)
-  5. 객실별 날짜별 요금 + 예약 가능 여부 계산 후 응답
+  3. Rate Bulk IN 쿼리 1회 → 전 객실의 날짜별 요금 일괄 조회 → per-date warm-up
+  4. Inventory Bulk IN 쿼리 1회 (DB 직접 조회, 캐시 미적용)
+  5. 객실별 날짜별 요금 + 예약 가능 여부 조립 → 응답
   ```
-          
 
 동시 요청 효과
-  
-  - A 사용자 (Cold) :Rate 조회 60회 → Inventory DB 1회 -> 캐시 적재
-  - B 사용자 (Warm) :Rate 조회 0회 → Inventory DB 1회
-  - C 사용자 (Warm) :Rate 조회 0회 → Inventory DB 1회
+
+  - A 사용자 (Cold): Rate Bulk 쿼리 1회 → per-date 캐시 적재 → Inventory DB 1회
+  - B 사용자 (Warm): Rate 캐시 히트 (DB 0회) → Inventory DB 1회
+  - C 사용자 (Warm): Rate 캐시 히트 (DB 0회) → Inventory DB 1회
 
 캐시 무효화 전략
 
-  - 파트너 요금 수정 -> RateUpdatedEvent    -> rate:{roomTypeId}:{date} 즉시 evict                      
-  - 파트너 숙소 수정 -> PropertyUpdatedEvent -> property:{id} 즉시 evict                                
-  - 파트너 객실 수정 -> RoomTypeUpdatedEvent -> roomTypes:{propertyId} 즉시 evict                       
-  - 파트너 재고 변경 -> InventoryChangedEvent -> 캐시 대상 아님 (항상 DB)
-  - 예약 생성/취소 -> 재고 변동 -> 캐시 대상 아님 (항상 DB)
+  - 파트너 요금 수정 → RateUpdatedEvent → rate:{roomTypeId}:{date} 변경된 날짜만 evict
+  - 파트너 숙소 수정 → PropertyUpdatedEvent → property:{id} evict + search 전체 clear
+  - 파트너 객실 수정 → RoomTypeUpdatedEvent → roomTypes:{propertyId} + property:{id} evict + search 전체 clear
+  - 재고 변경/예약 생성/취소 → 캐시 대상 아님 (항상 DB 직접 조회)
 
 ## 2. 예약(동시성)
 ### 2-1 각 동시성 특징
@@ -172,13 +185,13 @@
   ```
 - 서비스 로직(캐시 무효화, 채널 동기화 처리)은 변경 없이 재사용된다. 발행/구독 메커니즘만 교체하면 되도록 설계했다.
 
-## 6. 인증 설계
+## 5. 인증 설계
 
-### 6-1 인증 방식을 어떻게 선택할 것인가?
+### 5-1 인증 방식을 어떻게 선택할 것인가?
 - 서버가 사용자의 인증 상태를 어떻게 관리할 것인지 결정해야 한다.
 - 크게 세션 기반(Stateful)과 토큰 기반(Stateless) 두 가지가 있다.
 
-### 6-2 세션 vs JWT
+### 5-2 세션 vs JWT
 
 | 기준 | 세션 방식 | JWT 방식 |
 |------|----------|---------|
@@ -193,7 +206,7 @@
   - 이 프로젝트의 핵심은 인증 인프라가 아닌 숙소 예약 도메인이므로, 인증은 가볍게 유지
   - 강제 로그아웃 불가 트레이드오프는 Access Token TTL 30분으로 완화
 
-### 6-3 파트너/고객 인증 체계 분리 vs 통합
+### 5-3 파트너/고객 인증 체계 분리 vs 통합
 
 - 초기에 하나의 로그인 API로 고객과 파트너를 모두 처리하는 방안을 검토했다.
   - 이메일/패스워드 기반이라는 공통점이 있기 때문
@@ -203,7 +216,7 @@
   3. URL 패턴이 다르다: 고객은 /api/, 파트너는 /api/extranet/
 - 통합했을 때의 이점(코드 중복 감소)보다 분리했을 때의 이점(명확한 책임, 독립적 확장, 보안 오류 방지)이 크다.
 
-### 6-4 @AuthenticationPrincipal 대신 래퍼 타입 + ArgumentResolver
+### 5-4 @AuthenticationPrincipal 대신 래퍼 타입 + ArgumentResolver
 
 - Spring Security의 @AuthenticationPrincipal을 직접 사용하면 컨트롤러가 Spring Security 구현 세부사항에 의존한다.
   - 인증 방식이 JWT → OAuth2로 변경되면 모든 Controller를 수정해야 함

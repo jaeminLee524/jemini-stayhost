@@ -47,52 +47,9 @@
 
 글로벌 캐시(Redis)로 Extranet / Admin 서버와 캐시 정합성을 유지하는 것이 이상적인 아키텍처이지만, 단일 인스턴스 환경이므로 로컬 캐시 + 이벤트 기반 무효화로 충분히 대응 가능하다.
 
+### [2.2 CacheConfig 구성](../../backend/src/main/java/com/jemini/stayhost/common/config/CacheConfig.java)
 
-
-### 2.2 Spring Boot + Caffeine 구성
-
-```yaml
-# application.yml
-spring:
-  cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=100,expireAfterWrite=600s  # 기본값, 캐시별 오버라이드
-
-cache:
-  property:
-    ttl-seconds: 600    # 10분
-    max-size: 5000
-  room-types:
-    ttl-seconds: 600    # 10분
-    max-size: 5000
-  rate:
-    ttl-seconds: 180    # 3분
-    max-size: 30000
-```
-
-```java
-@Configuration
-@EnableCaching
-public class CacheConfig {
-
-    @Bean
-    public CacheManager cacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager();
-        manager.setCacheNames(List.of("property", "roomTypes", "rate"));
-
-        // 캐시별 개별 설정
-        Map<String, Caffeine<Object, Object>> specs = Map.of(
-            "property",  Caffeine.newBuilder().maximumSize(5_000).expireAfterWrite(10, MINUTES),
-            "roomTypes", Caffeine.newBuilder().maximumSize(5_000).expireAfterWrite(10, MINUTES),
-            "rate",      Caffeine.newBuilder().maximumSize(30_000).expireAfterWrite(3, MINUTES)
-        );
-        // 각 캐시 등록
-        ...
-        return manager;
-    }
-}
-```
+`SimpleCacheManager`에 캐시별 개별 `CaffeineCache`를 등록한다. 각 캐시는 용도에 맞는 TTL과 최대 크기를 갖는다.
 
 ---
 
@@ -100,142 +57,186 @@ public class CacheConfig {
 
 ### 3.1 캐시 구성 전체 개요
 
-| 캐시명 | 키 패턴 | TTL | 최대 크기 | 대상 데이터 | 무효화 트리거 |
-|--------|---------|-----|----------|-------------|--------------|
-| `property` | `property:{id}` | 10분 | 5,000 | 숙소 기본 정보 (이름, 주소, 설명, 이미지) | `PropertyUpdatedEvent` |
-| `roomTypes` | `roomTypes:{propertyId}` | 10분 | 5,000 | 숙소별 객실 유형 목록 | `RoomTypeUpdatedEvent` |
-| `rate` | `rate:{roomTypeId}:{date}` | 3분 | 30,000 | 날짜별 요금 단가 | `RateUpdatedEvent` |
+| 캐시명 | 키 패턴 | TTL | 최대 크기 | 대상 데이터 | 캐싱 방식 | 무효화 트리거 |
+|--------|---------|-----|----------|-------------|-----------|--------------|
+| `search` | `{region, keyword, page, size}` | 1분 | 1,000 | 검색 결과 페이지 | `@Cacheable` | `PropertyUpdatedEvent`, `RoomTypeUpdatedEvent` 시 전체 clear |
+| `property` | `{propertyId}` | 30분 | 5,000 | 숙소 기본 정보 | `@Cacheable` | `PropertyUpdatedEvent`, `RoomTypeUpdatedEvent` |
+| `roomTypes` | `{propertyId}` | 10분 | 5,000 | 숙소별 객실 유형 목록 | `@Cacheable` | `RoomTypeUpdatedEvent` |
+| `rate` | `{roomTypeId}:{date}` | 3분 | 30,000 | 날짜별 요금 단가 | 수동 warm-up | `RateUpdatedEvent` |
 
-### 3.2 property 캐시
+### 3.2 search 캐시
 
-숙소 기본 정보(이름, 주소, 지역, 설명, 체크인/아웃 시간, 이미지 URL 등)는 파트너가 수정하지 않는 한 변경이 없다.
-
-- TTL 10분은 수정 반영 지연을 허용하는 대신 높은 캐시 히트율을 얻는 트레이드오프다
-
-```java
-@Cacheable(cacheNames = "property", key = "#propertyId")
-public PropertyDto getProperty(Long propertyId) {
-    return propertyRepository.findById(propertyId)
-        .map(PropertyDto::from)
-        .orElseThrow(() -> new PropertyNotFoundException(propertyId));
-}
-```
-
-### 3.3 roomTypes 캐시
-
-한 숙소의 객실 유형 목록은 검색 결과 조립 시 반복적으로 필요하다. 숙소 ID를 키로 객실 목록 전체를 캐시하면 여러 날짜 요금 조회에서 재사용된다.
+검색 결과를 단기간(1분) 캐시하여 동일 검색 조건의 반복 요청을 흡수한다.
 
 ```java
-@Cacheable(cacheNames = "roomTypes", key = "#propertyId")
-public List<RoomTypeDto> getRoomTypes(Long propertyId) {
-    return roomTypeRepository.findByPropertyId(propertyId)
-        .stream()
-        .map(RoomTypeDto::from)
-        .toList();
-}
+@Cacheable(value = "search", key = "{#region, #keyword, #pageable.pageNumber, #pageable.pageSize}")
+@Transactional(readOnly = true)
+public PageResult<PropertySearchResult> searchProperties(
+    final String region,
+    final String keyword,
+    final Pageable pageable
+) { ... }
 ```
 
-### 3.4 rate 캐시
+TTL을 1분으로 짧게 잡은 이유:
 
-날짜별 요금은 가장 세분화된 캐시 단위다.
+- 검색 파라미터 조합이 다양하므로(지역 x 키워드 x 페이지) 캐시 히트율이 높지 않다
+- 숙소/객실 변경 시 전체 무효화(clear)하므로 TTL이 길면 메모리만 낭비된다
+- 1분이라도 동시 접속자의 동일 검색을 흡수하면 DB 부하가 크게 줄어든다
 
-- TTL을 3분으로 짧게 설정한 이유는 파트너가 즉시 요금을 변경했을 때 빠르게 반영되어야 하기 때문이다
-- 키를 `{roomTypeId}:{date}` 단위로 설계했기 때문에 특정 날짜의 요금이 변경될 때 해당 날짜만 무효화하면 된다
-- 예를 들어 3월 28일 요금만 변경해도 3월 29일, 30일 캐시는 유지된다
-
-```java
-@Cacheable(cacheNames = "rate", key = "#roomTypeId + ':' + #date")
-public RateDto getRate(Long roomTypeId, LocalDate date) {
-    return ratePolicyRepository.findByRoomTypeIdAndDate(roomTypeId, date)
-        .map(RateDto::from)
-        .orElse(RateDto.notAvailable());
-}
-```
-
-### 3.5 재고는 캐싱하지 않는다
-
-```java
-// 재고 조회는 항상 DB에서 실시간으로
-public InventoryDto getInventory(Long roomTypeId, LocalDate date) {
-    // @Cacheable 없음 - 의도적
-    return inventoryRepository.findByRoomTypeIdAndDate(roomTypeId, date)
-        .map(InventoryDto::from)
-        .orElseThrow();
-}
-```
-
-### 재고 캐시 (InventoryCache) — 동시성 제어용
-
-요금 조회용 캐시와 별도로, 예약 동시성 처리를 위한 재고 전용 캐시를 운영한다.
-
-- 이 캐시는 단순 조회 캐시가 아니라, CAS(Compare-And-Swap) 연산으로 원자적 재고 차감을 수행하는 동시성 제어 도구이다
-
-| 항목 | 값 |
-|------|-----|
-| 키 | `{roomTypeId}:{date}` |
-| 값 | `AtomicInteger` (가용 재고 수) |
-| 용도 | 예약 요청의 1차 필터 (DB 접근 전 빠른 매진 판단) |
-| 워밍업 | `@PostConstruct`에서 DB inventory 테이블 로드 |
-| 무효화 | Extranet 재고 변경 시 `InventoryChangedEvent`로 동기화 |
-
-이 캐시는 TTL 기반이 아니라 이벤트 기반으로만 갱신된다. 재고는 실시간 정합성이 필수이므로 TTL 만료에 의한 stale 데이터를 허용하지 않는다.
-
-상세 플로우는 [04-concurrency.md](04-concurrency.md)의 "Caffeine CAS + DB 비관적 락 2단계 전략" 참조.
-
----
-
-## 4. 검색 결과를 통째로 캐시하지 않는 이유
-
-### 4.1 조합 폭발 문제
-
-검색 파라미터를 키로 검색 결과를 캐시하면 키의 경우의 수가 폭발한다.
-
-```
-지역 (시/도 단위): 17가지
-체크인 날짜: 365가지
-체크아웃 날짜: 체크인 기준 1~14박 = 14가지
-인원: 1~8명 = 8가지
-페이지: 1~N
-
-→ 17 × 365 × 14 × 8 × N = 700,000 × N 가지
-```
-
-이 경우 캐시 히트율은 극히 낮다(동일한 지역 + 날짜 + 인원 + 페이지 조합이 반복될 가능성이 낮음). 캐시 공간만 낭비하고 실효성이 없다.
-
-### 4.2 검색은 DB 커버링 인덱스로 대응
-
-검색 자체의 성능은 DB 커버링 인덱스로 해결한다. 검색 쿼리는 인덱스만으로 숙소 ID 목록을 빠르게 추출하고, 상세 정보는 하위 캐시(property, roomTypes, rate)에서 조립한다.
+검색 자체의 DB 성능은 커버링 인덱스로 보장한다.
 
 ```sql
 -- 커버링 인덱스: (region, status, id)
 -- SELECT 절의 모든 컬럼이 인덱스에 포함 → 테이블 접근 없이 인덱스만으로 결과 반환
 CREATE INDEX idx_property_search ON property (region, status, id);
-
--- 검색 쿼리: 인덱스만으로 숙소 ID 목록 추출
-SELECT p.id
-FROM property p
-WHERE p.region = :region
-  AND p.status = 'ACTIVE'
-ORDER BY p.id
-LIMIT :size OFFSET :offset;
 ```
 
-이후 각 숙소 ID로 `property:{id}` 캐시를 조회하면 대부분 캐시 히트가 발생한다. 동일 숙소는 다른 날짜/인원 검색에서도 반복 조회되기 때문이다.
+### 3.3 property 캐시
 
-### 4.3 검색 결과 조립 흐름
+숙소 기본 정보(이름, 주소, 지역, 설명, 체크인/아웃 시간, 이미지 URL 등)는 파트너가 수정하지 않는 한 변경이 없다.
+
+- TTL 30분은 수정 반영 지연을 허용하는 대신 높은 캐시 히트율을 얻는 트레이드오프다
+- 이벤트 기반 무효화가 1차 방어이므로, 변경 시에는 즉시 evict된다
+
+```java
+@Cacheable(value = "property", key = "#id")
+@Override
+public Property getActiveById(final Long id) {
+    return propertyRepository.findByIdAndStatus(id, PropertyStatus.ACTIVE)
+        .orElseThrow(() -> new NotFoundException(ErrorCode.PROPERTY_NOT_FOUND));
+}
+```
+
+### 3.4 roomTypes 캐시
+
+한 숙소의 객실 유형 목록은 검색 결과 조립과 요금 조회에서 반복적으로 필요하다. 숙소 ID를 키로 객실 목록 전체를 캐시하면 여러 날짜 요금 조회에서 재사용된다.
+
+```java
+@Cacheable(value = "roomTypes", key = "#propertyId")
+@Override
+public List<RoomType> findActiveByPropertyId(final Long propertyId) {
+    return roomTypeRepository.findByPropertyIdAndStatus(propertyId, RoomTypeStatus.ACTIVE);
+}
+```
+
+### 3.5 rate 캐시: 수동 warm-up 방식
+
+날짜별 요금은 가장 세분화된 캐시 단위다. `@Cacheable`이 아닌 수동 warm-up 방식을 사용한다.
+
+`@Cacheable`을 사용하지 않는 이유:
+
+- 요금 조회는 날짜 범위 단위로 요청되지만, 캐시 키는 `{roomTypeId}:{date}` 단일 날짜 단위다
+- `@Cacheable`로 범위 쿼리를 캐싱하면 키가 `startDate:endDate`가 되어, 날짜 하나만 변경되어도 전체 범위 캐시를 무효화해야 한다
+- per-date 키를 사용하면 변경된 날짜만 정밀하게 evict할 수 있다
+
+따라서 DB에서 Bulk IN 쿼리로 일괄 조회한 뒤, 결과를 per-date 키로 분해하여 캐시에 적재(warm-up)한다.
+
+```java
+@Component
+@RequiredArgsConstructor
+public class RateReaderImpl implements RateReader {
+
+    private static final String RATE_CACHE_NAME = "rate";
+
+    private final RateRepository rateRepository;
+    private final CacheManager cacheManager;
+
+    @Override
+    public List<Rate> findByRoomTypeIdsAndDateBetween(
+        final List<Long> roomTypeIds,
+        final LocalDate startDate,
+        final LocalDate endDate
+    ) {
+        if (roomTypeIds.isEmpty()) {
+            return List.of();
+        }
+        final List<Rate> rates = rateRepository.findByRoomTypeIdInAndDateBetween(
+            roomTypeIds, startDate, endDate);
+        warmRatesIntoCache(rates);
+        return rates;
+    }
+
+    private void warmRatesIntoCache(final List<Rate> rates) {
+        final Cache cache = cacheManager.getCache(RATE_CACHE_NAME);
+        if (cache != null) {
+            rates.forEach(rate -> {
+                final String key = rate.getRoomTypeId() + ":" + rate.getDate();
+                cache.put(key, rate);
+            });
+        }
+    }
+}
+```
+
+이 방식의 장점:
+
+- N+1 쿼리 제거: roomType별 개별 쿼리 대신 IN절 Bulk 쿼리 1회로 전환
+- 정밀 eviction: 요금 변경 시 `affectedDates` 기반으로 해당 날짜만 evict (O(k), k = 변경된 날짜 수)
+- TTL 3분: 파트너 요금 수정 시 빠르게 반영되어야 하므로 짧게 설정
+
+### 3.6 재고는 캐싱하지 않는다
+
+```java
+// 재고 조회는 항상 DB에서 실시간으로
+public List<Inventory> findByRoomTypeIdsAndDateBetween(
+    final List<Long> roomTypeIds,
+    final LocalDate startDate,
+    final LocalDate endDate
+) {
+    // @Cacheable 없음 - 의도적
+    return inventoryRepository.findByRoomTypeIdInAndDateBetween(roomTypeIds, startDate, endDate);
+}
+```
+
+---
+
+## 4. 요금 조회 흐름: Bulk IN 쿼리 + per-date 캐시
+
+### 4.1 전체 흐름
+
+```mermaid
+flowchart TD
+    A[숙소 요금 조회 API 요청] --> B
+
+    B["1. property 캐시 조회\nproperty:{propertyId}\n@Cacheable → 히트 시 즉시 반환"]
+
+    B --> C["2. roomTypes 캐시 조회\nroomTypes:{propertyId}\n@Cacheable → 히트 시 즉시 반환"]
+
+    C --> D["3. 요금 Bulk IN 쿼리\nrateReader.findByRoomTypeIdsAndDateBetween()\n→ DB에서 1회 조회 → per-date warm-up"]
+
+    D --> E["4. 재고 Bulk IN 쿼리\ninventoryReader.findByRoomTypeIdsAndDateBetween()\n→ 항상 DB 실시간 조회 (캐시 없음)"]
+
+    E --> F[5. 날짜별 요금+재고 조립 → 응답]
+```
+
+### 4.2 검색 결과 조립 흐름
 
 ```mermaid
 flowchart TD
     A[숙소 검색 API 요청] --> B
 
-    B["1. DB 커버링 인덱스 쿼리\n→ 숙소 ID 목록 [1, 2, 3, 4, 5, ...]\n인덱스만 접근, 매우 빠름"]
+    B["1. search 캐시 조회\nsearch:{region, keyword, page, size}\n@Cacheable → 히트 시 즉시 반환 (1분 TTL)"]
 
-    B --> C["2. 숙소별 병렬 데이터 조립\nproperty:{id} 캐시 → 히트 시 즉시 반환\nroomTypes:{propertyId} 캐시 → 캐시 조회"]
+    B -->|캐시 미스| C["2. DB 커버링 인덱스 쿼리\n→ 숙소 ID 목록"]
 
-    C --> D["3. 요금 정보 조립 (요청 날짜 범위)\nrate:{roomTypeId}:{date} 캐시 조회\n캐시 미스 시에만 DB 조회"]
+    C --> D["3. roomTypes IN 쿼리\n→ 숙소별 객실 유형 일괄 조회"]
 
-    D --> E[검색 결과 응답]
+    D --> E["4. 검색 결과 조립 → 캐시 적재 → 응답"]
 ```
+
+### 4.3 N+1 → Bulk 전환 효과
+
+k6 부하 테스트(280 VUs, 80초, 숙소당 객실 5개) 결과, Bulk IN 쿼리 전환 후 p(99) tail latency가 전 시나리오에서 85~91% 감소했다.
+
+| 시나리오 | p(99) 전환 전 | p(99) 전환 후 | 개선율 |
+|---------|-------------|-------------|--------|
+| 검색 | 109.77ms | 9.97ms | -91% |
+| 상세 | 119.83ms | 10.42ms | -91% |
+| 요금 | 172.17ms | 26.03ms | -85% |
+| 예약 | 188.21ms | 26.81ms | -86% |
+
+상세 결과는 [부하 테스트 결과 보고서](../test/k6-load-test-report.md) 참조.
 
 ---
 
@@ -255,22 +256,21 @@ flowchart TD
     B["DB UPDATE 실행\n← @Transactional"] --> C
     C["RateUpdatedEvent 발행\n← ApplicationEventPublisher.publishEvent()"] --> D
     D["@TransactionalEventListener AFTER_COMMIT\nCacheEvictListener\n해당 날짜 캐시 제거\ncacheManager.getCache('rate').evict(roomTypeId + ':' + date)"] --> E
-    E["다음 조회 시 DB에서 최신 요금 로드\n← Cache Miss → DB 조회 → 캐시 재적재"]
+    E["다음 조회 시 DB에서 최신 요금 로드\n← DB 조회 → warm-up으로 캐시 재적재"]
 ```
 
 ### 5.3 이벤트별 캐시 무효화 대상
 
-| 이벤트 | 무효화 캐시 키 | 비고 |
-|--------|--------------|------|
-| `PropertyUpdatedEvent` | `property:{propertyId}` | 숙소 기본 정보 변경 |
-| `RoomTypeUpdatedEvent` | `roomTypes:{propertyId}` + `property:{propertyId}` | 객실 수정 시 숙소 캐시도 무효화 |
-| `RateUpdatedEvent` | `rate:{roomTypeId}:{date}` (변경된 날짜 범위 전체) | 날짜 범위 일괄 무효화 |
-| `InventoryChangedEvent` | 무효화 없음 | 재고는 캐싱하지 않음 |
-| `SupplierSyncCompletedEvent` | 동기화된 숙소의 property + roomTypes + rate | 배치 동기화 후 전체 갱신 |
+| 이벤트 | 무효화 캐시 | 무효화 방식 | 비고 |
+|--------|-----------|-----------|------|
+| `PropertyUpdatedEvent` | `property:{propertyId}` + `search` 전체 | evict + clear | 숙소 정보 변경 시 검색 결과에도 영향 |
+| `RoomTypeUpdatedEvent` | `roomTypes:{propertyId}` + `property:{propertyId}` + `search` 전체 | evict + clear | 객실 수정 시 숙소/검색 캐시도 무효화 |
+| `RateUpdatedEvent` | `rate:{roomTypeId}:{date}` (변경된 날짜만) | per-date evict | `affectedDates` 기반 정밀 무효화 |
 
-### 5.4 CacheEvictListener 구현 패턴
+### 5.4 CacheEvictListener 구현
 
 ```java
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class CacheEvictListener {
@@ -278,28 +278,36 @@ public class CacheEvictListener {
     private final CacheManager cacheManager;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onPropertyUpdated(PropertyUpdatedEvent event) {
+    public void onPropertyUpdated(final PropertyUpdatedEvent event) {
         evict("property", event.propertyId());
+        clearCache("search");
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onRoomTypeUpdated(RoomTypeUpdatedEvent event) {
+    public void onRoomTypeUpdated(final RoomTypeUpdatedEvent event) {
         evict("roomTypes", event.propertyId());
         evict("property", event.propertyId());
+        clearCache("search");
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onRateUpdated(RateUpdatedEvent event) {
-        // 변경된 날짜 범위 전체 무효화
+    public void onRateUpdated(final RateUpdatedEvent event) {
         event.affectedDates().forEach(date ->
             evict("rate", event.roomTypeId() + ":" + date)
         );
     }
 
-    private void evict(String cacheName, Object key) {
-        Cache cache = cacheManager.getCache(cacheName);
+    private void evict(final String cacheName, final Object key) {
+        final Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
             cache.evict(key);
+        }
+    }
+
+    private void clearCache(final String cacheName) {
+        final Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
         }
     }
 }
@@ -325,7 +333,7 @@ TTL만으로는 변경 후 최대 TTL만큼 stale 데이터가 노출된다.
 - 이벤트 기반 무효화가 1차 방어, TTL은 2차 안전망이다
 - TTL을 너무 짧게 설정하면 캐시 효과가 줄어든다
 - 너무 길게 설정하면 stale 노출 시간이 늘어난다
-- 현재 설정(property 10분, rate 3분)은 파트너의 일반적인 요금 수정 패턴(일 단위 수정)을 고려한 균형점이다
+- 현재 설정(property 30분, roomTypes 10분, rate 3분, search 1분)은 각 데이터의 변경 빈도를 고려한 균형점이다
 - 이벤트 무효화가 정상 동작한다면 TTL은 사실상 안전망에 불과하므로 짧게 설정할 필요도 없다
 
 ### 6.3 캐시 워밍업 (선택적 최적화)

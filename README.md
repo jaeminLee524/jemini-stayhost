@@ -18,6 +18,102 @@ OTA(Online Travel Agency) 숙박 플랫폼의 백엔드 시스템 설계 및 구
 | Test | JUnit 5 + Testcontainers (MySQL) |
 | Load Test | k6 |
 
+## 빠른 시작 가이드
+
+### 사전 준비
+
+| 도구 | 버전 | 설치 (macOS) |
+|------|------|-------------|
+| Docker | 27+ | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
+| k6 | 0.57+ | `brew install k6` |
+
+JDK, Gradle은 Docker 빌드 내에서 처리되므로 별도 설치가 필요 없다.
+
+### 1단계: 서버 기동
+
+```bash
+# 프로젝트 클론
+git clone <repository-url>
+cd jemini-stayhost
+
+# MySQL + Spring Boot 앱 기동 (초기 빌드 시 2~3분 소요)
+docker compose up -d
+
+# 기동 확인 (health: UP이면 정상)
+curl -s http://localhost:8080/api/public/health
+```
+
+MySQL 스키마는 Flyway가 앱 시작 시 자동 마이그레이션한다.
+
+앱 로그 확인이 필요하면:
+
+```bash
+docker logs -f stayhost-backend
+```
+
+### 2단계: Swagger UI 접속
+
+브라우저에서 아래 주소로 접속한다.
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
+API는 역할별로 구분되어 있다:
+
+| 접두사 | 대상 | 인증 |
+|--------|------|------|
+| `/api/public/` | 비인증 공개 API (회원가입, 로그인, 검색) | 불필요 |
+| `/api/extranet/` | 파트너 (숙소/객실/요금/재고 관리) | Bearer Token (파트너) |
+| `/api/` | 고객 (예약 생성/조회/취소) | Bearer Token (고객) |
+
+Swagger에서 인증이 필요한 API를 테스트하려면:
+
+```bash
+# 1. 회원가입
+curl -X POST http://localhost:8080/api/public/users/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"password1234","name":"테스트","phone":"010-1234-5678"}'
+
+# 2. 로그인 → accessToken 획득
+curl -X POST http://localhost:8080/api/public/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"password1234"}'
+```
+
+응답의 `data.accessToken` 값을 Swagger UI 상단 Authorize 버튼에 `Bearer {토큰}` 형식으로 입력한다.
+
+### 3단계: k6 부하 테스트
+
+```bash
+# 1. k6 테스트 데이터 시딩 (숙소 5개, 객실 25개, 요금/재고 30일)
+bash k6/scripts/seed.sh
+
+# 2. 혼합 부하 테스트 실행 (검색 150 + 상세 80 + 예약 50 = 최대 280 VUs, 80초)
+k6 run k6/scripts/mixed-load.js
+```
+
+개별 시나리오만 실행하려면:
+
+```bash
+k6 run k6/scripts/search-load.js      # 검색 전용 (100 VUs, 30s)
+k6 run k6/scripts/reservation-load.js # 예약 전용 (50 VUs, 10s)
+```
+
+테스트 결과 분석은 [부하 테스트 결과 보고서](docs/test/k6-load-test-report.md)를 참고한다.
+
+### 서버 종료 및 초기화
+
+```bash
+# 서버 종료
+docker compose down
+
+# DB 데이터까지 완전 초기화
+docker compose down -v
+```
+
+---
+
 ## 설계 문서 안내
 
 설계 문서는 `docs/design/` 디렉토리에서 확인할 수 있다.
@@ -37,7 +133,6 @@ OTA(Online Travel Agency) 숙박 플랫폼의 백엔드 시스템 설계 및 구
 |------|------|
 | [캐시 전략](docs/design/05-cache-strategy.md) | Caffeine 하위 단위 캐시, 정합성 전략 |
 | [이벤트 아키텍처](docs/design/06-event-architecture.md) | ApplicationEvent 기반 도메인 이벤트 설계 |
-| [시퀀스 다이어그램](docs/design/07-sequence-diagrams.md) | 7개 핵심 플로우 시퀀스 (Mermaid) |
 
 ### 개발 가이드
 
