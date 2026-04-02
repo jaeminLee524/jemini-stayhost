@@ -124,7 +124,7 @@ erDiagram
         DATETIME updated_at
     }
 
-    user {
+    users {
         BIGINT id PK
         VARCHAR email UK
         VARCHAR password
@@ -274,7 +274,7 @@ erDiagram
     property ||--o{ room_type : "has"
     room_type ||--o{ rate : "has"
     room_type ||--o{ inventory : "has"
-    user ||--o{ reservation : "creates"
+    users ||--o{ reservation : "creates"
     property ||--o{ reservation : "receives"
     room_type ||--o{ reservation : "booked_as"
     reservation ||--o{ reservation_daily_rate : "records"
@@ -338,12 +338,12 @@ erDiagram
 | name | VARCHAR(200) | NOT NULL | 숙소명 |
 | type | VARCHAR(30) | NOT NULL | HOTEL / MOTEL / PENSION / RESORT / GUESTHOUSE |
 | description | TEXT | - | 상세 설명 |
-| address | VARCHAR(500) | NOT NULL | 주소 |
+| address | VARCHAR(500) | - | 주소 |
 | region | VARCHAR(100) | NOT NULL | 지역 (서울, 부산 등) |
 | latitude | DECIMAL(10,7) | - | 위도 |
 | longitude | DECIMAL(10,7) | - | 경도 |
-| check_in_time | TIME | NOT NULL, DEFAULT '15:00:00' | 체크인 시간 |
-| check_out_time | TIME | NOT NULL, DEFAULT '11:00:00' | 체크아웃 시간 |
+| check_in_time | TIME | - | 체크인 시간 |
+| check_out_time | TIME | - | 체크아웃 시간 |
 | thumbnail_url | VARCHAR(500) | - | 대표 이미지 URL |
 | status | VARCHAR(20) | NOT NULL, DEFAULT 'DRAFT' | DRAFT / ACTIVE / INACTIVE |
 | created_at | DATETIME | NOT NULL | 생성일시 |
@@ -445,9 +445,9 @@ erDiagram
 
 ### 3.3 Customer Context
 
-#### user
+#### users
 
-고객 회원 정보다.
+고객 회원 정보다. `user`는 MySQL 예약어이므로 테이블명을 `users`로 지정했다.
 
 - `email`이 로그인 ID 역할을 한다
 - 파트너 계정(partner)과 테이블을 분리해 Customer Context와 Partner Context의 인증 경계를 명확히 했다
@@ -482,8 +482,8 @@ erDiagram
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
 | id | BIGINT | PK, AUTO_INCREMENT | 내부 식별자 |
-| reservation_number | VARCHAR(30) | NOT NULL, UNIQUE | 외부 노출용 예약번호 |
-| user_id | BIGINT | NOT NULL, FK → user | 예약 회원 |
+| reservation_number | VARCHAR(50) | NOT NULL, UNIQUE | 외부 노출용 예약번호 |
+| user_id | BIGINT | NOT NULL, FK → users | 예약 회원 |
 | property_id | BIGINT | NOT NULL, FK → property | 숙소 |
 | room_type_id | BIGINT | NOT NULL, FK → room_type | 객실 유형 |
 | check_in_date | DATE | NOT NULL | 체크인 날짜 |
@@ -495,7 +495,7 @@ erDiagram
 | discount_amount | DECIMAL(12,2) | NOT NULL, DEFAULT 0 | 할인 총액 |
 | final_price | DECIMAL(12,2) | NOT NULL | 최종 금액 (base_price - discount_amount) |
 | status | VARCHAR(20) | NOT NULL, DEFAULT 'CONFIRMED' | CONFIRMED / CANCELLED / FAILED |
-| source | VARCHAR(30) | NOT NULL, DEFAULT 'DIRECT' | DIRECT / CHANNEL:{channelName} |
+| source | VARCHAR(20) | NOT NULL, DEFAULT 'DIRECT' | DIRECT / CHANNEL:{channelName} |
 | cancelled_at | DATETIME | - | 취소 일시 |
 | cancel_reason | VARCHAR(500) | - | 취소 사유 |
 | confirmed_at | DATETIME | - | 확정 일시 |
