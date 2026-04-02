@@ -12,66 +12,121 @@ const detailDuration = new Trend("detail_duration", true);
 const rateDuration = new Trend("rate_duration", true);
 const reservationDuration = new Trend("reservation_duration", true);
 const searchSuccess = new Rate("search_success");
+const detailSuccess = new Rate("detail_success");
+const rateSuccess = new Rate("rate_success");
 const reservationSuccessCount = new Counter("reservation_success_count");
 const reservationFailCount = new Counter("reservation_fail_count");
 
-// ── 옵션 ──
+// ── 검색 파라미터 풀 (캐시 히트/미스 혼합) ──
+
+const REGIONS = ["서울", "서울", "서울", "부산", "제주"];
+const KEYWORDS = ["", "", "", "호텔", "테스트"];
+
+// ── 옵션: 시나리오별 분리 ──
 
 export const options = {
     scenarios: {
-        mixed_load: {
-            executor: "constant-vus",
-            vus: 200,
-            duration: "60s",
+        // 검색 트래픽: 가장 높은 볼륨 (ramping)
+        search_browse: {
+            executor: "ramping-vus",
+            startVUs: 0,
+            stages: [
+                { duration: "10s", target: 50 },
+                { duration: "30s", target: 100 },
+                { duration: "10s", target: 150 },
+                { duration: "20s", target: 150 },
+                { duration: "10s", target: 0 },
+            ],
+            exec: "searchBrowse",
+            gracefulRampDown: "5s",
+        },
+        // 상세+요금 조회: 중간 볼륨
+        detail_view: {
+            executor: "ramping-vus",
+            startVUs: 0,
+            stages: [
+                { duration: "10s", target: 20 },
+                { duration: "30s", target: 50 },
+                { duration: "10s", target: 80 },
+                { duration: "20s", target: 80 },
+                { duration: "10s", target: 0 },
+            ],
+            exec: "detailView",
+            gracefulRampDown: "5s",
+        },
+        // 예약 생성: 낮은 볼륨이지만 쓰기 경합 발생
+        reservation_create: {
+            executor: "ramping-vus",
+            startVUs: 0,
+            stages: [
+                { duration: "15s", target: 10 },
+                { duration: "30s", target: 30 },
+                { duration: "20s", target: 50 },
+                { duration: "15s", target: 0 },
+            ],
+            exec: "reservationCreate",
+            gracefulRampDown: "5s",
         },
     },
     thresholds: {
-        search_duration: ["p(99)<500"],
-        reservation_duration: ["p(99)<2000"],
+        search_duration: ["p(95)<300", "p(99)<500"],
+        detail_duration: ["p(95)<300", "p(99)<500"],
+        rate_duration: ["p(95)<500", "p(99)<1000"],
+        reservation_duration: ["p(95)<1000", "p(99)<2000"],
         search_success: ["rate>0.99"],
+        detail_success: ["rate>0.99"],
+        rate_success: ["rate>0.99"],
     },
 };
 
-// ── VU 시나리오: 검색 70% + 예약 30% ──
+// ── 시나리오 1: 검색 (캐시 히트/미스 혼합) ──
 
-export default function () {
-    if (Math.random() < 0.7) {
-        searchFlow();
-    } else {
-        reservationFlow();
-    }
+export function searchBrowse() {
+    const region = REGIONS[Math.floor(Math.random() * REGIONS.length)];
+    const keyword = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
+    const page = Math.floor(Math.random() * 3);
+
+    let url = `${BASE_URL}/api/public/search/properties?page=${page}&size=10`;
+    if (region) url += `&region=${encodeURIComponent(region)}`;
+    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+
+    const res = http.get(url);
+    searchDuration.add(res.timings.duration);
+    searchSuccess.add(check(res, { "검색 200": (r) => r.status === 200 }));
+
+    sleep(Math.random() * 0.5 + 0.2);
 }
 
-function searchFlow() {
-    // 1. 숙소 검색
-    const searchRes = http.get(`${BASE_URL}/api/public/search/properties`);
-    searchDuration.add(searchRes.timings.duration);
-    const ok = check(searchRes, { "검색 200": (r) => r.status === 200 });
-    searchSuccess.add(ok);
+// ── 시나리오 2: 상세 + 요금 조회 ──
 
-    sleep(0.3);
-
-    // 2. 랜덤 숙소 상세
+export function detailView() {
     const propertyId = SEED_DATA.propertyIds[Math.floor(Math.random() * SEED_DATA.propertyIds.length)];
+
+    // 상세 조회
     const detailRes = http.get(`${BASE_URL}/api/public/properties/${propertyId}`);
     detailDuration.add(detailRes.timings.duration);
-    check(detailRes, { "상세 200": (r) => r.status === 200 });
+    detailSuccess.add(check(detailRes, { "상세 200": (r) => r.status === 200 }));
 
-    sleep(0.2);
+    sleep(Math.random() * 0.3 + 0.1);
 
-    // 3. 요금 조회
+    // 요금 조회 (동일 숙소 - 캐시 히트 기대)
     const rateRes = http.get(
         `${BASE_URL}/api/public/search/properties/${propertyId}/rates?startDate=${SEED_DATA.startDate}&endDate=${SEED_DATA.endDate}`
     );
     rateDuration.add(rateRes.timings.duration);
-    check(rateRes, { "요금 200": (r) => r.status === 200 });
+    rateSuccess.add(check(rateRes, { "요금 200": (r) => r.status === 200 }));
 
-    sleep(0.2);
+    sleep(Math.random() * 0.3 + 0.1);
 }
 
-function reservationFlow() {
-    const propertyId = SEED_DATA.propertyIds[Math.floor(Math.random() * SEED_DATA.propertyIds.length)];
-    const roomTypeId = SEED_DATA.roomTypeIds[Math.floor(Math.random() * SEED_DATA.roomTypeIds.length)];
+// ── 시나리오 3: 예약 생성 ──
+
+export function reservationCreate() {
+    const idx = Math.floor(Math.random() * SEED_DATA.propertyIds.length);
+    const propertyId = SEED_DATA.propertyIds[idx];
+    // roomTypeIds는 숙소당 2개: idx*2, idx*2+1
+    const roomTypeIdx = idx * 2 + Math.floor(Math.random() * 2);
+    const roomTypeId = SEED_DATA.roomTypeIds[roomTypeIdx];
 
     const res = http.post(
         `${BASE_URL}/api/reservations`,
@@ -80,7 +135,7 @@ function reservationFlow() {
             roomTypeId: roomTypeId,
             checkInDate: SEED_DATA.startDate,
             checkOutDate: SEED_DATA.endDate,
-            guestName: `k6혼합_VU${__VU}`,
+            guestName: `k6_VU${__VU}_${__ITER}`,
             guestPhone: "010-0000-0000",
             guestCount: 2,
         }),
@@ -107,5 +162,5 @@ function reservationFlow() {
         reservationFailCount.add(1);
     }
 
-    sleep(0.1);
+    sleep(Math.random() * 0.5 + 0.3);
 }

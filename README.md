@@ -35,8 +35,6 @@ OTA(Online Travel Agency) 숙박 플랫폼의 백엔드 시스템 설계 및 구
 
 | 문서 | 설명 |
 |------|------|
-| [채널 매니저](docs/design/06-channel-manager.md) | 타 OTA 재고/요금 동기화 설계 |
-| [Supplier 연동](docs/design/07-supplier-integration.md) | 외부 공급자 배치 동기화 설계 |
 | [캐시 전략](docs/design/08-cache-strategy.md) | Caffeine 하위 단위 캐시, 정합성 전략 |
 | [이벤트 아키텍처](docs/design/09-event-architecture.md) | ApplicationEvent 기반 도메인 이벤트 설계 |
 | [시퀀스 다이어그램](docs/design/10-sequence-diagrams.md) | 7개 핵심 플로우 시퀀스 (Mermaid) |
@@ -60,6 +58,13 @@ OTA(Online Travel Agency) 숙박 플랫폼의 백엔드 시스템 설계 및 구
 | [ADR-003](docs/design/adr/003-local-cache-strategy.md) | Caffeine 로컬 캐시 + 하위 단위 키 |
 | [ADR-004](docs/design/adr/004-auto-confirmation-flow.md) | 자동 확정 기반 예약 플로우 |
 | [ADR-005](docs/design/adr/005-event-driven-cache-invalidation.md) | 이벤트 기반 캐시 무효화 |
+
+## 부하 테스트
+
+| 문서 | 설명 |
+|------|------|
+| [k6 실행 가이드](k6/README.md) | 설치, 시딩, 실행 방법 |
+| [부하 테스트 결과](docs/test/k6-load-test-report.md) | 280 VUs 혼합 부하 테스트 결과 및 캐시 효과 분석 |
 
 ## 과정 기록서 (Progress Journal)
 
