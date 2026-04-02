@@ -1,5 +1,6 @@
 package com.jemini.stayhost.property.presentation.dto;
 
+import com.jemini.stayhost.property.application.dto.RoomTypeImageResult;
 import com.jemini.stayhost.property.application.dto.RoomTypeResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
@@ -38,6 +39,9 @@ public record RoomTypeResponse(
     @Schema(description = "상태", example = "ACTIVE")
     String status,
 
+    @Schema(description = "객실 이미지 목록")
+    List<RoomTypeImageResponse> images,
+
     @Schema(description = "등록일시")
     LocalDateTime createdAt,
 
@@ -45,13 +49,13 @@ public record RoomTypeResponse(
     LocalDateTime updatedAt
 ) {
 
-    public static List<RoomTypeResponse> mapToResponse(List<RoomTypeResult> roomTypes) {
+    public static List<RoomTypeResponse> mapToResponses(List<RoomTypeResult> roomTypes) {
         return roomTypes.stream()
-            .map(RoomTypeResponse::from)
+            .map(RoomTypeResponse::mapToResponse)
             .toList();
     }
 
-    public static RoomTypeResponse from(final RoomTypeResult result) {
+    public static RoomTypeResponse mapToResponse(final RoomTypeResult result) {
         return RoomTypeResponse.builder()
             .id(result.id())
             .propertyId(result.propertyId())
@@ -62,8 +66,24 @@ public record RoomTypeResponse(
             .amenities(result.amenities())
             .totalRoomCount(result.totalRoomCount())
             .status(result.status())
+            .images(mapToImages(result))
             .createdAt(result.createdAt())
             .updatedAt(result.updatedAt())
             .build();
     }
+
+    private static List<RoomTypeImageResponse> mapToImages(RoomTypeResult result) {
+        return result.images().stream()
+            .map(RoomTypeResponse::mapToImage)
+            .toList();
+    }
+
+    private static RoomTypeImageResponse mapToImage(RoomTypeImageResult img) {
+        return RoomTypeImageResponse.builder()
+            .id(img.id())
+            .imageUrl(img.imageUrl())
+            .sortOrder(img.sortOrder())
+            .build();
+    }
+
 }

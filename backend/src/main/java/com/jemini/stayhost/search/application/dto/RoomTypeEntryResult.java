@@ -1,7 +1,9 @@
 package com.jemini.stayhost.search.application.dto;
 
 import com.jemini.stayhost.property.domain.model.RoomType;
+import com.jemini.stayhost.property.domain.model.RoomTypeImage;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Builder;
 
 @Builder
@@ -11,7 +13,8 @@ public record RoomTypeEntryResult(
     String description,
     int maxOccupancy,
     BigDecimal basePrice,
-    String amenities
+    String amenities,
+    List<RoomTypeImageEntryResult> images
 ) {
 
     public static RoomTypeEntryResult from(final RoomType roomType) {
@@ -22,6 +25,20 @@ public record RoomTypeEntryResult(
             .maxOccupancy(roomType.getMaxOccupancy())
             .basePrice(roomType.getBasePrice())
             .amenities(roomType.getAmenities())
+            .images(mapToImages(roomType.getImages()))
+            .build();
+    }
+
+    private static List<RoomTypeImageEntryResult> mapToImages(final List<RoomTypeImage> images) {
+        return images.stream()
+            .map(RoomTypeEntryResult::mapToImage)
+            .toList();
+    }
+
+    private static RoomTypeImageEntryResult mapToImage(RoomTypeImage image) {
+        return RoomTypeImageEntryResult.builder()
+            .imageUrl(image.getImageUrl())
+            .sortOrder(image.getSortOrder())
             .build();
     }
 }

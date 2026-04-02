@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "room_type")
@@ -45,6 +47,9 @@ public class RoomType extends BaseEntity {
     @Column(nullable = false, length = 20)
     private RoomTypeStatus status;
 
+    @OneToMany(mappedBy = "roomType", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomTypeImage> images = new ArrayList<>();
+
     public static RoomType create(
         final Long propertyId,
         final String name,
@@ -78,6 +83,16 @@ public class RoomType extends BaseEntity {
         this.maxOccupancy = maxOccupancy;
         this.basePrice = basePrice;
         this.amenities = amenities;
+    }
+
+    public void replaceImages(final List<String> imageUrls) {
+        this.images.clear();
+        if (imageUrls == null) {
+            return;
+        }
+        for (int i = 0; i < imageUrls.size(); i++) {
+            this.images.add(RoomTypeImage.create(this, imageUrls.get(i), i));
+        }
     }
 
     public void validateGuestCount(final int guestCount) {

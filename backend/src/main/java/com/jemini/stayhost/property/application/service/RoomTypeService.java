@@ -50,6 +50,9 @@ public class RoomTypeService {
         property.validateOwner(partnerId);
 
         final RoomType roomType = buildRoomType(propertyId, command);
+        if (command.imageUrls() != null && !command.imageUrls().isEmpty()) {
+            roomType.replaceImages(command.imageUrls());
+        }
         final RoomType saved = roomTypeManager.save(roomType);
 
         eventPublisher.publishEvent(RoomTypeUpdatedEvent.create(propertyId));
@@ -95,6 +98,9 @@ public class RoomTypeService {
 
         validateRoomTypeOwner(roomType, partnerId);
         roomType.update(command.name(), command.description(), command.maxOccupancy(), command.basePrice(), toJson(command.amenities()));
+        if (command.imageUrls() != null) {
+            roomType.replaceImages(command.imageUrls());
+        }
 
         eventPublisher.publishEvent(RoomTypeUpdatedEvent.create(roomType.getPropertyId()));
 

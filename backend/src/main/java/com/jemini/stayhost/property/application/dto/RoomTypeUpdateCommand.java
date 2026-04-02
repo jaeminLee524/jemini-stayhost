@@ -10,7 +10,8 @@ public record RoomTypeUpdateCommand(
     String description,
     int maxOccupancy,
     BigDecimal basePrice,
-    List<String> amenities
+    List<String> amenities,
+    List<String> imageUrls
 ) {
 
 }

@@ -23,7 +23,10 @@ public record RoomTypeUpdateRequest(
     BigDecimal basePrice,
 
     @Schema(description = "어메니티 목록", example = "[\"WiFi\", \"TV\", \"에어컨\", \"냉장고\", \"스마트 TV\"]")
-    List<String> amenities
+    List<String> amenities,
+
+    @Schema(description = "객실 이미지 URL 목록")
+    List<String> imageUrls
 ) {
 
     public RoomTypeUpdateCommand toCommand() {
@@ -33,6 +36,7 @@ public record RoomTypeUpdateRequest(
             .maxOccupancy(this.maxOccupancy)
             .basePrice(this.basePrice)
             .amenities(this.amenities)
+            .imageUrls(this.imageUrls)
             .build();
     }
 }

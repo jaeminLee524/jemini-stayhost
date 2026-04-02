@@ -2,6 +2,7 @@ package com.jemini.stayhost.search.presentation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Builder;
 
 @Builder
@@ -23,7 +24,10 @@ public record RoomTypeEntryResponse(
     BigDecimal basePrice,
 
     @Schema(description = "편의시설 목록", example = "와이파이,에어컨,냉장고")
-    String amenities
+    String amenities,
+
+    @Schema(description = "객실 이미지 목록")
+    List<ImageEntryResponse> images
 ) {
 
 }

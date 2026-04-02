@@ -1,6 +1,7 @@
 package com.jemini.stayhost.search.application.dto;
 
 import com.jemini.stayhost.property.domain.model.Property;
+import com.jemini.stayhost.property.domain.model.PropertyImage;
 import com.jemini.stayhost.property.domain.model.RoomType;
 import lombok.Builder;
 
@@ -41,8 +42,27 @@ public record PropertyDetailResult(
             .checkInTime(property.getCheckInTime())
             .checkOutTime(property.getCheckOutTime())
             .thumbnailUrl(property.getThumbnailUrl())
-            .images(property.getImages().stream().map(PropertyImageEntryResult::from).toList())
-            .roomTypes(roomTypes.stream().map(RoomTypeEntryResult::from).toList())
+            .images(mapToImages(property.getImages()))
+            .roomTypes(mapToRoomTypes(roomTypes))
             .build();
+    }
+
+    private static List<PropertyImageEntryResult> mapToImages(final List<PropertyImage> images) {
+        return images.stream()
+            .map(PropertyDetailResult::mapToImage)
+            .toList();
+    }
+
+    private static PropertyImageEntryResult mapToImage(final PropertyImage img) {
+        return PropertyImageEntryResult.builder()
+            .imageUrl(img.getImageUrl())
+            .sortOrder(img.getSortOrder())
+            .build();
+    }
+
+    private static List<RoomTypeEntryResult> mapToRoomTypes(final List<RoomType> roomTypes) {
+        return roomTypes.stream()
+            .map(RoomTypeEntryResult::from)
+            .toList();
     }
 }

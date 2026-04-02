@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -59,6 +60,26 @@ class RoomTypeTest {
         final RoomType roomType = createRoomType(2);
 
         roomType.validateGuestCount(2);
+    }
+
+    @Test
+    @DisplayName("객실유형 생성시 이미지 빈 리스트")
+    void 객실유형_생성시_이미지_빈_리스트() {
+        final RoomType roomType = createRoomType(2);
+
+        assertThat(roomType.getImages()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("객실유형 이미지 교체 성공")
+    void 객실유형_이미지_교체_성공() {
+        final RoomType roomType = createRoomType(2);
+
+        roomType.replaceImages(List.of("https://cdn.example.com/img/1.jpg", "https://cdn.example.com/img/2.jpg"));
+
+        assertThat(roomType.getImages()).hasSize(2);
+        assertThat(roomType.getImages().get(0).getImageUrl()).isEqualTo("https://cdn.example.com/img/1.jpg");
+        assertThat(roomType.getImages().get(1).getSortOrder()).isEqualTo(1);
     }
 
     private RoomType createRoomType(final int maxOccupancy) {

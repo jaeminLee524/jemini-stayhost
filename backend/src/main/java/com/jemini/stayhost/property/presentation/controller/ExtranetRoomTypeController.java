@@ -31,7 +31,7 @@ public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
     ) {
         final RoomTypeResult result = roomTypeService.createRoomType(propertyId, partnerId.value(), request.toCommand());
 
-        return ApiBaseResponse.success(RoomTypeResponse.from(result));
+        return ApiBaseResponse.success(RoomTypeResponse.mapToResponse(result));
     }
 
     @GetMapping("/properties/{propertyId}/room-types")
@@ -41,7 +41,7 @@ public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
     ) {
         List<RoomTypeResult> roomTypes = roomTypeService.getRoomTypes(propertyId, partnerId.value());
 
-        return ApiBaseResponse.success(RoomTypeResponse.mapToResponse(roomTypes));
+        return ApiBaseResponse.success(RoomTypeResponse.mapToResponses(roomTypes));
     }
 
     @PutMapping("/room-types/{id}")
@@ -52,6 +52,6 @@ public class ExtranetRoomTypeController implements ExtranetRoomTypeDocs {
     ) {
         final RoomTypeResult result = roomTypeService.updateRoomType(id, partnerId.value(), request.toCommand());
 
-        return ApiBaseResponse.success(RoomTypeResponse.from(result));
+        return ApiBaseResponse.success(RoomTypeResponse.mapToResponse(result));
     }
 }

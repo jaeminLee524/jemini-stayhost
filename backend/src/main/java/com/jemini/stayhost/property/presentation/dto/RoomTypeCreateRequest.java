@@ -29,7 +29,10 @@ public record RoomTypeCreateRequest(
     List<String> amenities,
 
     @Schema(description = "총 객실 수", example = "10")
-    @NotNull @Min(1) Integer totalRoomCount
+    @NotNull @Min(1) Integer totalRoomCount,
+
+    @Schema(description = "객실 이미지 URL 목록")
+    List<String> imageUrls
 ) {
 
     public RoomTypeCreateCommand toCommand() {
@@ -40,6 +43,7 @@ public record RoomTypeCreateRequest(
             .basePrice(this.basePrice)
             .amenities(this.amenities)
             .totalRoomCount(this.totalRoomCount)
+            .imageUrls(this.imageUrls)
             .build();
     }
 }

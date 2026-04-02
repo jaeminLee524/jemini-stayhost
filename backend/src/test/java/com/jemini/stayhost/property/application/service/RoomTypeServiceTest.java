@@ -118,6 +118,41 @@ class RoomTypeServiceTest {
             .isInstanceOf(AuthorizationException.class);
     }
 
+    @Test
+    @DisplayName("객실유형 등록 - 이미지 포함 성공")
+    void 객실유형_등록_이미지_포함_성공() {
+        given(propertyReader.getById(PROPERTY_ID)).willReturn(createProperty(PARTNER_ID));
+        given(roomTypeManager.save(any(RoomType.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        final RoomTypeResult result = roomTypeService.createRoomType(PROPERTY_ID, PARTNER_ID,
+            RoomTypeCreateCommand.builder().name("스탠다드").description("설명")
+                .maxOccupancy(2).basePrice(BigDecimal.valueOf(120000)).totalRoomCount(10)
+                .imageUrls(List.of("https://cdn.example.com/img/1.jpg", "https://cdn.example.com/img/2.jpg"))
+                .build());
+
+        assertThat(result.name()).isEqualTo("스탠다드");
+        assertThat(result.images()).hasSize(2);
+        assertThat(result.images().get(0).imageUrl()).isEqualTo("https://cdn.example.com/img/1.jpg");
+    }
+
+    @Test
+    @DisplayName("객실유형 수정 - 이미지 교체 성공")
+    void 객실유형_수정_이미지_교체_성공() {
+        final RoomType roomType = RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10);
+        roomType.replaceImages(List.of("https://cdn.example.com/img/old.jpg"));
+        given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(roomType);
+        given(propertyReader.getById(PROPERTY_ID)).willReturn(createProperty(PARTNER_ID));
+
+        final RoomTypeResult result = roomTypeService.updateRoomType(ROOM_TYPE_ID, PARTNER_ID,
+            RoomTypeUpdateCommand.builder().name("디럭스").description("업그레이드")
+                .maxOccupancy(3).basePrice(BigDecimal.valueOf(200000))
+                .imageUrls(List.of("https://cdn.example.com/img/new1.jpg", "https://cdn.example.com/img/new2.jpg"))
+                .build());
+
+        assertThat(result.images()).hasSize(2);
+        assertThat(result.images().get(0).imageUrl()).isEqualTo("https://cdn.example.com/img/new1.jpg");
+    }
+
     private Property createProperty(final Long partnerId) {
         return Property.create(partnerId, "테스트 호텔", PropertyType.HOTEL, "설명",
             "서울시 강남구", "서울", LocalTime.of(15, 0), LocalTime.of(11, 0), null, null, null);

@@ -11,7 +11,8 @@ public record RoomTypeCreateCommand(
     int maxOccupancy,
     BigDecimal basePrice,
     List<String> amenities,
-    int totalRoomCount
+    int totalRoomCount,
+    List<String> imageUrls
 ) {
 
 }

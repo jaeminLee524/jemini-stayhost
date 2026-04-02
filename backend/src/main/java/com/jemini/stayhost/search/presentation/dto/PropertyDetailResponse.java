@@ -3,6 +3,7 @@ package com.jemini.stayhost.search.presentation.dto;
 import com.jemini.stayhost.search.application.dto.PropertyDetailResult;
 import com.jemini.stayhost.search.application.dto.PropertyImageEntryResult;
 import com.jemini.stayhost.search.application.dto.RoomTypeEntryResult;
+import com.jemini.stayhost.search.application.dto.RoomTypeImageEntryResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -98,6 +99,20 @@ public record PropertyDetailResponse(
             .maxOccupancy(rt.maxOccupancy())
             .basePrice(rt.basePrice())
             .amenities(rt.amenities())
+            .images(mapToRoomTypeImageEntries(rt.images()))
+            .build();
+    }
+
+    private static List<ImageEntryResponse> mapToRoomTypeImageEntries(List<RoomTypeImageEntryResult> images) {
+        return images.stream()
+            .map(PropertyDetailResponse::mapToRoomTypeImageEntry)
+            .toList();
+    }
+
+    private static ImageEntryResponse mapToRoomTypeImageEntry(RoomTypeImageEntryResult img) {
+        return ImageEntryResponse.builder()
+            .imageUrl(img.imageUrl())
+            .sortOrder(img.sortOrder())
             .build();
     }
 }
