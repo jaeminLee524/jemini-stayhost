@@ -4,7 +4,7 @@
 - AI 와의 반복적인 대화를 통해 요구사항을 만족하는 시스템 및 도메인 설계 진행.
 - 반복적인 피드백을 통해 설계 개선.
 - 도메인 모델링과 Bounded Context 식별을 통해 시스템의 책임과 경계를 명확히 함.
-  - [도메인 모델](../design/02-domain-model.md)로 문서화.
+  - [도메인 모델](../design/01-domain-model.md)로 문서화.
 - 각 기능 별 기술적 의사결정 및 트레이드오프 분석을 통해 최적의 설계 방향을 도출.
   - [ADR](../design/adr/001-monolith-package-separation.md)로 문서화.
 
@@ -16,4 +16,4 @@
 
 ## 테스트
 - 개발된 기능에 대한 단위 테스트, 통합 테스트, E2E 테스트 계획 수립 및 실행.
-- [테스트 전략](../design/15-test-strategy.md) 문서화.
+- [테스트 전략](../design/12-test-strategy.md) 문서화.

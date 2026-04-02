@@ -1,6 +1,6 @@
-# 09. 이벤트 기반 아키텍처
+# 06. 이벤트 기반 아키텍처
 
-> 관련 문서: [05-concurrency.md](./05-concurrency.md), [08-cache-strategy.md](./08-cache-strategy.md)
+> 관련 문서: [04-concurrency.md](./04-concurrency.md), [05-cache-strategy.md](./05-cache-strategy.md)
 
 ---
 

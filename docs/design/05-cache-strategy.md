@@ -1,6 +1,6 @@
-# 08. 캐시 전략
+# 05. 캐시 전략
 
-> 관련 문서: [05-concurrency.md](./05-concurrency.md), [09-event-architecture.md](./09-event-architecture.md)
+> 관련 문서: [04-concurrency.md](./04-concurrency.md), [06-event-architecture.md](./06-event-architecture.md)
 
 ---
 
@@ -180,7 +180,7 @@ public InventoryDto getInventory(Long roomTypeId, LocalDate date) {
 
 이 캐시는 TTL 기반이 아니라 이벤트 기반으로만 갱신된다. 재고는 실시간 정합성이 필수이므로 TTL 만료에 의한 stale 데이터를 허용하지 않는다.
 
-상세 플로우는 [05-concurrency.md](05-concurrency.md)의 "Caffeine CAS + DB 비관적 락 2단계 전략" 참조.
+상세 플로우는 [04-concurrency.md](04-concurrency.md)의 "Caffeine CAS + DB 비관적 락 2단계 전략" 참조.
 
 ---
 

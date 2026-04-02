@@ -1,4 +1,4 @@
-# 10. 주요 시퀀스 다이어그램
+# 07. 주요 시퀀스 다이어그램
 
 > 이 문서는 OTA 플랫폼의 핵심 플로우 7개를 Mermaid 시퀀스 다이어그램으로 정리한다.
 > 각 다이어그램 아래에 설계 판단 근거와 주의사항을 함께 기술한다.
@@ -563,8 +563,6 @@ sequenceDiagram
 
 ## 연관 문서
 
-- [05-concurrency.md](05-concurrency.md) — 비관적 락 상세 전략, 낙관적 락 vs 비관적 락 비교
-- [06-channel-manager.md](06-channel-manager.md) — 채널 매니저 설계 (ERD, ChannelAdapter 인터페이스)
-- [07-supplier-integration.md](07-supplier-integration.md) — Supplier 연동 설계 (ERD, SupplierAdapter 인터페이스)
-- [08-cache-strategy.md](08-cache-strategy.md) — Caffeine 캐시 전략, 캐시 무효화 정책
-- [09-event-architecture.md](09-event-architecture.md) — 도메인 이벤트 목록, 발행/구독 구조
+- [04-concurrency.md](04-concurrency.md) — 비관적 락 상세 전략, 낙관적 락 vs 비관적 락 비교
+- [05-cache-strategy.md](05-cache-strategy.md) — Caffeine 캐시 전략, 캐시 무효화 정책
+- [06-event-architecture.md](06-event-architecture.md) — 도메인 이벤트 목록, 발행/구독 구조

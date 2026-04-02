@@ -1,7 +1,7 @@
 # 모니터링 설계
 
 > 작성일: 2026-03-28
-> 상태: DESIGN-ONLY (구현 불필요)
+> 상태: DESIGN-ONLY (커스텀 메트릭 구현 불필요, 인프라 설정만 적용)
 
 ---
 
@@ -14,6 +14,11 @@ Application (Micrometer) → Prometheus (수집) → Grafana (시각화 + 알림
 - Spring Boot Actuator + Micrometer로 `/actuator/prometheus` 엔드포인트 노출
 - Prometheus가 주기적으로 scrape하여 시계열 데이터 저장
 - Grafana 대시보드로 시각화 + 임계값 알림
+
+현재 적용 상태:
+- `spring-boot-starter-actuator` 의존성 추가됨
+- `application.yml`에 `/actuator/prometheus` 엔드포인트 노출 설정 완료
+- `micrometer-registry-prometheus` 의존성은 미추가 — Prometheus 연동 시 `build.gradle.kts`에 추가 필요
 
 ---
 
@@ -64,7 +69,7 @@ Application (Micrometer) → Prometheus (수집) → Grafana (시각화 + 알림
 
 | 대상 | 방법 | 비고 |
 |------|------|------|
-| Caffeine 캐시 히트/미스 | `Caffeine.newBuilder().recordStats()` + Micrometer 자동 연동 | 설정 한 줄로 `cache.gets{result=hit/miss}` 메트릭 노출 |
+| Caffeine 캐시 히트/미스 | `Caffeine.newBuilder().recordStats()` + Micrometer 자동 연동 | [CacheConfig](../../backend/src/main/java/com/jemini/stayhost/common/config/CacheConfig.java)에 `recordStats()` 적용 완료 |
 | Slow Query | MySQL `slow_query_log` 또는 Hibernate `hibernate.generate_statistics` | 비관적 락 쿼리 병목 감지 |
 | GC 빈도/시간 | Actuator 자동 수집 (`jvm.gc.pause`) | Full GC 빈발 시 알림 |
 | 스레드 풀 상태 | `executor.active`, `executor.queue.remaining` | 채널 매니저 전용 풀 포화 감지 |

@@ -26,28 +26,28 @@ OTA(Online Travel Agency) 숙박 플랫폼의 백엔드 시스템 설계 및 구
 
 | 문서 | 설명 |
 |------|------|
-| [도메인 모델](docs/design/02-domain-model.md) | 7개 Bounded Context, 엔티티 설계 |
-| [ERD](docs/design/03-erd.md) | 전체 테이블 DDL, 인덱스 전략 |
-| [API 명세](docs/design/04-api-spec.md) | Extranet / Customer / Admin / Channel / Supplier API |
-| [동시성 처리](docs/design/05-concurrency.md) | 비관적 락 예약, 대규모 요금 조회 전략 |
+| [도메인 모델](docs/design/01-domain-model.md) | 7개 Bounded Context, 엔티티 설계 |
+| [ERD](docs/design/02-erd.md) | 전체 테이블 DDL, 인덱스 전략 |
+| [API 명세](docs/design/03-api-spec.md) | Extranet / Customer / Admin / Channel / Supplier API |
+| [동시성 처리](docs/design/04-concurrency.md) | 비관적 락 예약, 대규모 요금 조회 전략 |
 
 ### 도메인 상세
 
 | 문서 | 설명 |
 |------|------|
-| [캐시 전략](docs/design/08-cache-strategy.md) | Caffeine 하위 단위 캐시, 정합성 전략 |
-| [이벤트 아키텍처](docs/design/09-event-architecture.md) | ApplicationEvent 기반 도메인 이벤트 설계 |
-| [시퀀스 다이어그램](docs/design/10-sequence-diagrams.md) | 7개 핵심 플로우 시퀀스 (Mermaid) |
+| [캐시 전략](docs/design/05-cache-strategy.md) | Caffeine 하위 단위 캐시, 정합성 전략 |
+| [이벤트 아키텍처](docs/design/06-event-architecture.md) | ApplicationEvent 기반 도메인 이벤트 설계 |
+| [시퀀스 다이어그램](docs/design/07-sequence-diagrams.md) | 7개 핵심 플로우 시퀀스 (Mermaid) |
 
 ### 개발 가이드
 
 | 문서 | 설명 |
 |------|------|
-| [코드 컨벤션](docs/design/11-code-conventions.md) | 패키지 구조(DIP), 네이밍, 응답 형식, Git 규칙 |
-| [에러 처리 및 로깅](docs/design/12-error-logging-strategy.md) | 예외 계층, ErrorCode, 구조화 로깅 전략 |
-| [모니터링 설계](docs/design/13-monitoring-design.md) | Micrometer + Prometheus + Grafana, 메트릭 정의 |
-| [보안 설계](docs/design/14-security-design.md) | JWT 인증, RBAC 인가, API 보안 정책 |
-| [테스트 전략](docs/design/15-test-strategy.md) | 동시성/통합/E2E/k6 부하 테스트 계획 |
+| [코드 컨벤션](docs/design/08-code-conventions.md) | 패키지 구조(DIP), 네이밍, 응답 형식, Git 규칙 |
+| [에러 처리 및 로깅](docs/design/09-error-logging-strategy.md) | 예외 계층, ErrorCode, 구조화 로깅 전략 |
+| [모니터링 설계](docs/design/10-monitoring-design.md) | Micrometer + Prometheus + Grafana, 메트릭 정의 |
+| [보안 설계](docs/design/11-security-design.md) | JWT 인증, RBAC 인가, API 보안 정책 |
+| [테스트 전략](docs/design/12-test-strategy.md) | 동시성/통합/E2E/k6 부하 테스트 계획 |
 
 ### ADR (Architecture Decision Records)
 

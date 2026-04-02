@@ -928,7 +928,7 @@ public record UserId(Long value) {
 }
 ```
 
-상세: [14-security-design.md](14-security-design.md) 2.5절
+상세: [11-security-design.md](11-security-design.md) 2.4절
 
 ---
 

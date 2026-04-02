@@ -1,6 +1,6 @@
-# 05. 동시성 처리 전략
+# 04. 동시성 처리 전략
 
-> 관련 문서: [08-cache-strategy.md](./08-cache-strategy.md), [09-event-architecture.md](./09-event-architecture.md)
+> 관련 문서: [05-cache-strategy.md](./05-cache-strategy.md), [06-event-architecture.md](./06-event-architecture.md)
 
 ---
 
@@ -147,7 +147,7 @@ Spring Data JPA에서는 `@Lock(LockModeType.PESSIMISTIC_WRITE)`와 `@Query`에 
 - `ReservationCreatedEvent`는 `@TransactionalEventListener(phase = AFTER_COMMIT)`으로 등록되어 DB 커밋이 완료된 후에만 발행된다
 - 재고 차감이라는 핵심 정합성 구간의 트랜잭션을 최대한 짧게 유지하기 위함이다
 
-채널 동기화 실패는 예약 성공에 영향을 주지 않는다. 실패한 채널은 재시도 큐에서 비동기로 처리된다. (상세 내용은 [06-channel-manager.md](./06-channel-manager.md) 참조)
+채널 동기화 실패는 예약 성공에 영향을 주지 않는다. 실패한 채널은 재시도 큐에서 비동기로 처리된다. 
 
 ---
 
@@ -191,7 +191,7 @@ Spring Data JPA에서는 `@Lock(LockModeType.PESSIMISTIC_WRITE)`와 `@Query`에 
 
 ## 4. 대규모 요금 조회: 캐시 + 커버링 인덱스
 
-요금 조회는 읽기 전용이므로 재고와 달리 캐싱이 가능하다. 상세 캐시 전략은 [08-cache-strategy.md](./08-cache-strategy.md)에서 다루며, 여기서는 동시성 관점에서의 핵심만 정리한다.
+요금 조회는 읽기 전용이므로 재고와 달리 캐싱이 가능하다. 상세 캐시 전략은 [05-cache-strategy.md](./05-cache-strategy.md)에서 다루며, 여기서는 동시성 관점에서의 핵심만 정리한다.
 
 ```mermaid
 flowchart TD
@@ -212,7 +212,7 @@ flowchart TD
 
 ## 5. 테스트 전략
 
-동시성 테스트 시나리오와 부하 테스트 계획은 [15-test-strategy.md](15-test-strategy.md)에서 별도로 다룬다.
+동시성 테스트 시나리오와 부하 테스트 계획은 [12-test-strategy.md](12-test-strategy.md)에서 별도로 다룬다.
 
 ---
 

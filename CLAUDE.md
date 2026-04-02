@@ -2,9 +2,9 @@
 
 ## 설계 문서
 - 아키텍처/도메인/ERD/API: docs/design/ (20개)
-- 코딩 원칙/네이밍/스타일: docs/design/11-code-conventions.md
-- 보안(JWT/인가): docs/design/14-security-design.md
-- 에러/로깅: docs/design/12-error-logging-strategy.md
+- 코딩 원칙/네이밍/스타일: docs/design/08-code-conventions.md
+- 보안(JWT/인가): docs/design/11-security-design.md
+- 에러/로깅: docs/design/09-error-logging-strategy.md
 - 일정/구현 스텝: docs/timeline.md
 
 ## 코드 수정 후 검증 (매번 필수)
