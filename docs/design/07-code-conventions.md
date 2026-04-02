@@ -930,7 +930,7 @@ public record UserId(Long value) {
 }
 ```
 
-상세: [11-security-design.md](11-security-design.md) 2.4절
+상세: [10-security-design.md](10-security-design.md) 2.4절
 
 ---
 

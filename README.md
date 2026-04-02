@@ -155,11 +155,11 @@ docker compose down -v
 
 | 문서 | 설명 |
 |------|------|
-| [코드 컨벤션](docs/design/08-code-conventions.md) | 패키지 구조(DIP), 네이밍, 응답 형식, Git 규칙 |
-| [에러 처리 및 로깅](docs/design/09-error-logging-strategy.md) | 예외 계층, ErrorCode, 구조화 로깅 전략 |
-| [모니터링 설계](docs/design/10-monitoring-design.md) | Micrometer + Prometheus + Grafana, 메트릭 정의 |
-| [보안 설계](docs/design/11-security-design.md) | JWT 인증, RBAC 인가, API 보안 정책 |
-| [테스트 전략](docs/design/12-test-strategy.md) | 동시성/통합/E2E/k6 부하 테스트 계획 |
+| [코드 컨벤션](docs/design/07-code-conventions.md) | 패키지 구조(DIP), 네이밍, 응답 형식, Git 규칙 |
+| [에러 처리 및 로깅](docs/design/08-error-logging-strategy.md) | 예외 계층, ErrorCode, 구조화 로깅 전략 |
+| [모니터링 설계](docs/design/09-monitoring-design.md) | Micrometer + Prometheus + Grafana, 메트릭 정의 |
+| [보안 설계](docs/design/10-security-design.md) | JWT 인증, RBAC 인가, API 보안 정책 |
+| [테스트 전략](docs/design/11-test-strategy.md) | 동시성/통합/E2E/k6 부하 테스트 계획 |
 
 ### ADR (Architecture Decision Records)
 

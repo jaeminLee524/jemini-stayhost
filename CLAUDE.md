@@ -2,11 +2,11 @@
 
 ## 설계 문서
 - 아키텍처/도메인/ERD/API: docs/design/ (11개)
-- 코딩 원칙/네이밍/스타일: docs/design/08-code-conventions.md
-- 보안(JWT/인가): docs/design/11-security-design.md
-- 에러/로깅: docs/design/09-error-logging-strategy.md
-- 모니터링: docs/design/10-monitoring-design.md
-- 테스트 전략: docs/design/12-test-strategy.md
+- 코딩 원칙/네이밍/스타일: docs/design/07-code-conventions.md
+- 보안(JWT/인가): docs/design/10-security-design.md
+- 에러/로깅: docs/design/08-error-logging-strategy.md
+- 모니터링: docs/design/09-monitoring-design.md
+- 테스트 전략: docs/design/11-test-strategy.md
 - 일정/구현 스텝: docs/timeline.md
 - 기능별 설계 고민: docs/journal/design-decisions.md
 
