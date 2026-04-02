@@ -38,17 +38,19 @@ class CacheEvictListenerTest {
     }
 
     @Test
-    @DisplayName("요금 변경 시 해당 roomTypeId의 rate 캐시만 제거한다")
-    void 요금_변경_시_해당_roomTypeId의_rate_캐시만_제거한다() {
-        rateCache.put("101:2026-04-01:2026-04-03", List.of());
-        rateCache.put("101:2026-04-05:2026-04-10", List.of());
-        rateCache.put("102:2026-04-01:2026-04-03", List.of());
+    @DisplayName("요금 변경 시 해당 날짜의 rate 캐시만 제거한다")
+    void 요금_변경_시_해당_날짜의_rate_캐시만_제거한다() {
+        rateCache.put("101:2026-04-01", List.of());
+        rateCache.put("101:2026-04-02", List.of());
+        rateCache.put("101:2026-04-03", List.of());
+        rateCache.put("102:2026-04-01", List.of());
 
         cacheEvictListener.onRateUpdated(RateUpdatedEvent.create(101L, List.of(LocalDate.of(2026, 4, 2))));
 
-        assertThat(rateCache.get("101:2026-04-01:2026-04-03")).isNull();
-        assertThat(rateCache.get("101:2026-04-05:2026-04-10")).isNull();
-        assertThat(rateCache.get("102:2026-04-01:2026-04-03")).isNotNull();
+        assertThat(rateCache.get("101:2026-04-01")).isNotNull();
+        assertThat(rateCache.get("101:2026-04-02")).isNull();
+        assertThat(rateCache.get("101:2026-04-03")).isNotNull();
+        assertThat(rateCache.get("102:2026-04-01")).isNotNull();
     }
 
     @Test
@@ -84,12 +86,12 @@ class CacheEvictListenerTest {
     @Test
     @DisplayName("요금 변경 시 다른 roomTypeId의 rate 캐시는 영향 없다")
     void 요금_변경_시_다른_roomTypeId의_rate_캐시는_영향_없다() {
-        rateCache.put("200:2026-04-01:2026-04-03", List.of());
-        rateCache.put("201:2026-04-01:2026-04-03", List.of());
+        rateCache.put("200:2026-04-01", List.of());
+        rateCache.put("201:2026-04-01", List.of());
 
         cacheEvictListener.onRateUpdated(RateUpdatedEvent.create(200L, List.of(LocalDate.of(2026, 4, 1))));
 
-        assertThat(rateCache.get("200:2026-04-01:2026-04-03")).isNull();
-        assertThat(rateCache.get("201:2026-04-01:2026-04-03")).isNotNull();
+        assertThat(rateCache.get("200:2026-04-01")).isNull();
+        assertThat(rateCache.get("201:2026-04-01")).isNotNull();
     }
 }

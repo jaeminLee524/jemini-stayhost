@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -36,23 +35,16 @@ public class CacheEvictListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onRateUpdated(final RateUpdatedEvent event) {
-        evictByPrefix("rate", event.roomTypeId() + ":");
-        log.debug("캐시 무효화: rate roomTypeId={}", event.roomTypeId());
+        event.affectedDates().forEach(date ->
+            evict("rate", event.roomTypeId() + ":" + date)
+        );
+        log.debug("캐시 무효화: rate roomTypeId={}, dates={}", event.roomTypeId(), event.affectedDates());
     }
 
     private void evict(final String cacheName, final Object key) {
         final Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
             cache.evict(key);
-        }
-    }
-
-    private void evictByPrefix(final String cacheName, final String prefix) {
-        final Cache cache = cacheManager.getCache(cacheName);
-        if (cache instanceof CaffeineCache caffeineCache) {
-            caffeineCache.getNativeCache().asMap().keySet().removeIf(
-                key -> key.toString().startsWith(prefix)
-            );
         }
     }
 

@@ -103,19 +103,15 @@ public class SearchService {
             .collect(groupingBy(RoomType::getPropertyId));
     }
 
-    /**
-     * roomType별 개별 조회로 분리하여 per-roomType 캐시를 활용한다.
-     */
     private Map<Long, List<Rate>> loadRatesByRoomType(
         final List<RoomType> roomTypes,
         final LocalDate startDate,
         final LocalDate endDate
     ) {
-        return roomTypes.stream()
-            .collect(toMap(
-                RoomType::getId,
-                rt -> rateReader.findByRoomTypeIdAndDateBetween(rt.getId(), startDate, endDate)
-            ));
+        final List<Long> roomTypeIds = roomTypes.stream().map(RoomType::getId).toList();
+
+        return rateReader.findByRoomTypeIdsAndDateBetween(roomTypeIds, startDate, endDate).stream()
+            .collect(groupingBy(Rate::getRoomTypeId));
     }
 
     private Map<Long, List<Inventory>> loadInventoryByRoomType(

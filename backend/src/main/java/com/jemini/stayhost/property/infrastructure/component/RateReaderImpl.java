@@ -4,7 +4,8 @@ import com.jemini.stayhost.property.domain.component.RateReader;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.infrastructure.persistence.RateRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -14,16 +15,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RateReaderImpl implements RateReader {
 
-    private final RateRepository rateRepository;
+    private static final String RATE_CACHE_NAME = "rate";
 
-    @Cacheable(value = "rate", key = "#roomTypeId + ':' + #startDate + ':' + #endDate")
+    private final RateRepository rateRepository;
+    private final CacheManager cacheManager;
+
     @Override
     public List<Rate> findByRoomTypeIdAndDateBetween(
         final Long roomTypeId,
         final LocalDate startDate,
         final LocalDate endDate
     ) {
-        return rateRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
+        final List<Rate> rates = rateRepository.findByRoomTypeIdAndDateBetween(roomTypeId, startDate, endDate);
+        warmRatesIntoCache(rates);
+        return rates;
     }
 
     @Override
@@ -35,6 +40,18 @@ public class RateReaderImpl implements RateReader {
         if (roomTypeIds.isEmpty()) {
             return List.of();
         }
-        return rateRepository.findByRoomTypeIdInAndDateBetween(roomTypeIds, startDate, endDate);
+        final List<Rate> rates = rateRepository.findByRoomTypeIdInAndDateBetween(roomTypeIds, startDate, endDate);
+        warmRatesIntoCache(rates);
+        return rates;
+    }
+
+    private void warmRatesIntoCache(final List<Rate> rates) {
+        final Cache cache = cacheManager.getCache(RATE_CACHE_NAME);
+        if (cache != null) {
+            rates.forEach(rate -> {
+                final String key = rate.getRoomTypeId() + ":" + rate.getDate();
+                cache.put(key, rate);
+            });
+        }
     }
 }

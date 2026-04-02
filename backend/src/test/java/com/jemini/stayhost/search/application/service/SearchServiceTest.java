@@ -53,25 +53,25 @@ class SearchServiceTest {
     private static final LocalDate END_DATE = LocalDate.of(2026, 4, 3);
 
     @Test
-    @DisplayName("요금 조회 시 roomType별 개별 캐시를 경유한다")
-    void 요금_조회_시_roomType별_개별_캐시를_경유한다() {
+    @DisplayName("요금 조회 시 bulk IN 쿼리로 일괄 조회한다")
+    void 요금_조회_시_bulk_IN_쿼리로_일괄_조회한다() {
         final Property property = createProperty();
         final RoomType roomType1 = createRoomType(ROOM_TYPE_ID_1, "디럭스");
         final RoomType roomType2 = createRoomType(ROOM_TYPE_ID_2, "스탠다드");
 
         given(propertyReader.getActiveById(PROPERTY_ID)).willReturn(property);
         given(roomTypeReader.findActiveByPropertyId(PROPERTY_ID)).willReturn(List.of(roomType1, roomType2));
-        given(rateReader.findByRoomTypeIdAndDateBetween(ROOM_TYPE_ID_1, START_DATE, END_DATE))
-            .willReturn(List.of(Rate.create(ROOM_TYPE_ID_1, START_DATE, BigDecimal.valueOf(150000))));
-        given(rateReader.findByRoomTypeIdAndDateBetween(ROOM_TYPE_ID_2, START_DATE, END_DATE))
-            .willReturn(List.of(Rate.create(ROOM_TYPE_ID_2, START_DATE, BigDecimal.valueOf(100000))));
+        given(rateReader.findByRoomTypeIdsAndDateBetween(List.of(ROOM_TYPE_ID_1, ROOM_TYPE_ID_2), START_DATE, END_DATE))
+            .willReturn(List.of(
+                Rate.create(ROOM_TYPE_ID_1, START_DATE, BigDecimal.valueOf(150000)),
+                Rate.create(ROOM_TYPE_ID_2, START_DATE, BigDecimal.valueOf(100000))
+            ));
         given(inventoryReader.findByRoomTypeIdsAndDateBetween(any(), any(), any())).willReturn(List.of());
 
         final RoomTypeRateResult result = searchService.getRoomTypeRates(PROPERTY_ID, START_DATE, END_DATE);
 
-        verify(rateReader).findByRoomTypeIdAndDateBetween(ROOM_TYPE_ID_1, START_DATE, END_DATE);
-        verify(rateReader).findByRoomTypeIdAndDateBetween(ROOM_TYPE_ID_2, START_DATE, END_DATE);
-        verify(rateReader, never()).findByRoomTypeIdsAndDateBetween(any(), any(), any());
+        verify(rateReader).findByRoomTypeIdsAndDateBetween(List.of(ROOM_TYPE_ID_1, ROOM_TYPE_ID_2), START_DATE, END_DATE);
+        verify(rateReader, never()).findByRoomTypeIdAndDateBetween(any(), any(), any());
         assertThat(result.roomTypes()).hasSize(2);
     }
 
@@ -83,7 +83,7 @@ class SearchServiceTest {
 
         given(propertyReader.getActiveById(PROPERTY_ID)).willReturn(property);
         given(roomTypeReader.findActiveByPropertyId(PROPERTY_ID)).willReturn(List.of(roomType));
-        given(rateReader.findByRoomTypeIdAndDateBetween(ROOM_TYPE_ID_1, START_DATE, END_DATE)).willReturn(List.of());
+        given(rateReader.findByRoomTypeIdsAndDateBetween(List.of(ROOM_TYPE_ID_1), START_DATE, END_DATE)).willReturn(List.of());
         given(inventoryReader.findByRoomTypeIdsAndDateBetween(any(), any(), any())).willReturn(List.of());
 
         final RoomTypeRateResult result = searchService.getRoomTypeRates(PROPERTY_ID, START_DATE, END_DATE);
