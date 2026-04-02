@@ -122,10 +122,10 @@ export function detailView() {
 // ── 시나리오 3: 예약 생성 ──
 
 export function reservationCreate() {
+    const ROOM_TYPES_PER_PROPERTY = Math.floor(SEED_DATA.roomTypeIds.length / SEED_DATA.propertyIds.length);
     const idx = Math.floor(Math.random() * SEED_DATA.propertyIds.length);
     const propertyId = SEED_DATA.propertyIds[idx];
-    // roomTypeIds는 숙소당 2개: idx*2, idx*2+1
-    const roomTypeIdx = idx * 2 + Math.floor(Math.random() * 2);
+    const roomTypeIdx = idx * ROOM_TYPES_PER_PROPERTY + Math.floor(Math.random() * ROOM_TYPES_PER_PROPERTY);
     const roomTypeId = SEED_DATA.roomTypeIds[roomTypeIdx];
 
     const res = http.post(

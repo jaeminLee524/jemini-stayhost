@@ -85,18 +85,17 @@ for i in $(seq 1 5); do
   echo "  숙소 ${i}: ID=${PROP_ID} (ACTIVE)"
 done
 
-# ── 4. 각 숙소에 객실 2개 + 요금/재고 설정 ──
+# ── 4. 각 숙소에 객실 5개 + 요금/재고 설정 ──
 
-echo "[5/8] 객실 유형 생성 (숙소당 2개)"
+ROOM_TYPES_PER_PROPERTY=5
+RT_NAMES=("스탠다드" "디럭스" "스위트" "패밀리" "프리미엄")
+RT_PRICES=(100000 150000 200000 180000 250000)
+
+echo "[5/8] 객실 유형 생성 (숙소당 ${ROOM_TYPES_PER_PROPERTY}개)"
 for PROP_ID in "${PROPERTY_IDS[@]}"; do
-  for j in 1 2; do
-    if [ "$j" -eq 1 ]; then
-      RT_NAME="스탠다드"
-      RT_PRICE=100000
-    else
-      RT_NAME="디럭스"
-      RT_PRICE=150000
-    fi
+  for j in $(seq 0 $((ROOM_TYPES_PER_PROPERTY - 1))); do
+    RT_NAME="${RT_NAMES[$j]}"
+    RT_PRICE="${RT_PRICES[$j]}"
 
     RT_RES=$(curl -s -X POST "${BASE_URL}/api/extranet/properties/${PROP_ID}/room-types" \
       -H "Content-Type: application/json" \
@@ -119,11 +118,7 @@ done
 echo "[6/8] 요금 설정 (${START_DATE} ~ ${END_DATE})"
 IDX=0
 for RT_ID in "${ROOM_TYPE_IDS[@]}"; do
-  if [ $((IDX % 2)) -eq 0 ]; then
-    PRICE=100000
-  else
-    PRICE=150000
-  fi
+  PRICE="${RT_PRICES[$((IDX % ROOM_TYPES_PER_PROPERTY))]}"
   curl -s -X PUT "${BASE_URL}/api/extranet/room-types/${RT_ID}/rates" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${PARTNER_TOKEN}" \
