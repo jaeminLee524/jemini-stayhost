@@ -6,6 +6,78 @@
 
 ---
 
+## API 요약
+
+### Extranet API (파트너용) — `/api/extranet`
+
+| 구분 | Method | Endpoint | 설명 | 상태 |
+|------|--------|----------|------|------|
+| 인증 | POST | `/api/public/extranet/auth/login` | 파트너 로그인 | BUILD |
+| 파트너 | POST | `/api/extranet/partners` | 파트너 등록 (인증 불필요) | BUILD |
+| 파트너 | GET | `/api/extranet/partners/me` | 내 파트너 정보 조회 | BUILD |
+| 파트너 | PUT | `/api/extranet/partners/me` | 파트너 정보 수정 | BUILD |
+| 숙소 | POST | `/api/extranet/properties` | 숙소 등록 | BUILD |
+| 숙소 | GET | `/api/extranet/properties` | 내 숙소 목록 조회 | BUILD |
+| 숙소 | GET | `/api/extranet/properties/{id}` | 숙소 상세 조회 | BUILD |
+| 숙소 | PUT | `/api/extranet/properties/{id}` | 숙소 정보 수정 | BUILD |
+| 숙소 | PATCH | `/api/extranet/properties/{id}/status` | 숙소 상태 변경 | BUILD |
+| 객실 | POST | `/api/extranet/properties/{id}/room-types` | 객실 유형 등록 | BUILD |
+| 객실 | GET | `/api/extranet/properties/{id}/room-types` | 객실 유형 목록 조회 | BUILD |
+| 객실 | PUT | `/api/extranet/room-types/{id}` | 객실 유형 수정 | BUILD |
+| 요금 | PUT | `/api/extranet/room-types/{id}/rates` | 요금 일괄 설정 | BUILD |
+| 요금 | GET | `/api/extranet/room-types/{id}/rates` | 요금 조회 | BUILD |
+| 재고 | PUT | `/api/extranet/room-types/{id}/inventory` | 재고 일괄 설정 | BUILD |
+| 재고 | GET | `/api/extranet/room-types/{id}/inventory` | 재고 조회 | BUILD |
+| 예약 | GET | `/api/extranet/reservations` | 예약 목록 조회 | BUILD |
+| 예약 | GET | `/api/extranet/reservations/{id}` | 예약 상세 조회 | BUILD |
+| 예약 | PATCH | `/api/extranet/reservations/{id}/confirm` | 예약 수동 확정 | DESIGN-ONLY |
+
+### Customer API (고객용) — `/api`
+
+| 구분 | Method | Endpoint | 설명 | 상태 |
+|------|--------|----------|------|------|
+| 인증 | POST | `/api/public/users/signup` | 회원가입 | BUILD |
+| 인증 | POST | `/api/public/users/login` | 회원 로그인 | BUILD |
+| 회원 | GET | `/api/users/me` | 내 정보 조회 | BUILD |
+| 검색 | GET | `/api/public/search/properties` | 숙소 검색 | BUILD |
+| 검색 | GET | `/api/public/search/properties/{id}/rates` | 객실별 요금 조회 | BUILD |
+| 숙소 | GET | `/api/public/properties/{id}` | 숙소 상세 조회 | BUILD |
+| 예약 | POST | `/api/reservations` | 예약 생성 | BUILD |
+| 예약 | GET | `/api/reservations` | 내 예약 목록 조회 | BUILD |
+| 예약 | GET | `/api/reservations/{id}` | 예약 상세 조회 | BUILD |
+| 예약 | POST | `/api/reservations/{id}/cancel` | 예약 취소 | BUILD |
+
+### Admin API (내부 관리용) — `/api/admin`
+
+| 구분 | Method | Endpoint | 설명 | 상태 |
+|------|--------|----------|------|------|
+| 파트너 | GET | `/api/admin/partners` | 파트너 목록 조회 | DESIGN-ONLY |
+| 파트너 | PATCH | `/api/admin/partners/{id}/status` | 파트너 상태 변경 | DESIGN-ONLY |
+| 숙소 | GET | `/api/admin/properties` | 전체 숙소 목록 | DESIGN-ONLY |
+| 예약 | GET | `/api/admin/reservations` | 전체 예약 목록 | DESIGN-ONLY |
+| 채널 | GET | `/api/admin/channels` | 채널 목록 조회 | DESIGN-ONLY |
+| 공급자 | GET | `/api/admin/suppliers` | 공급자 목록 조회 | DESIGN-ONLY |
+
+### Channel Manager API — `/api/channels`
+
+| 구분 | Method | Endpoint | 설명 | 상태 |
+|------|--------|----------|------|------|
+| 재고 | POST | `/api/channels/{channelId}/push-inventory` | 재고 푸시 | DESIGN-ONLY |
+| 요금 | POST | `/api/channels/{channelId}/push-rates` | 요금 푸시 | DESIGN-ONLY |
+| 예약 | POST | `/api/channels/{channelId}/webhook/reservation` | 예약 웹훅 수신 | DESIGN-ONLY |
+| 동기화 | GET | `/api/channels/{channelId}/sync-status` | 동기화 상태 조회 | DESIGN-ONLY |
+
+### Supplier API — `/api/suppliers`
+
+| 구분 | Method | Endpoint | 설명 | 상태 |
+|------|--------|----------|------|------|
+| 동기화 | POST | `/api/suppliers/{supplierId}/sync` | 수동 동기화 트리거 | BUILD |
+| 숙소 | GET | `/api/suppliers/{supplierId}/properties` | 공급자 숙소 목록 | DESIGN-ONLY |
+| 매핑 | POST | `/api/suppliers/{supplierId}/properties/{externalId}/map` | 숙소 매핑 | DESIGN-ONLY |
+| 이력 | GET | `/api/suppliers/{supplierId}/sync-jobs` | 동기화 이력 조회 | DESIGN-ONLY |
+
+---
+
 ## 1. 공통 규약
 
 ### 1.1 공통 응답 구조 (ApiResponse)
@@ -141,12 +213,11 @@ Response `200 OK`
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
     "tokenType": "Bearer",
-    "expiresIn": 3600,
-    "partnerUser": {
-      "id": 1,
-      "partnerId": 10,
-      "name": "홍길동",
-      "role": "OWNER"
+    "expiresIn": 1800,
+    "partner": {
+      "id": 10,
+      "businessName": "㈜스테이호스트",
+      "status": "ACTIVE"
     }
   },
   "error": null
@@ -172,8 +243,7 @@ Request
   "bankName": "국민은행",
   "bankAccount": "123456-78-901234",
   "loginId": "partner_admin",
-  "password": "password1234!",
-  "adminName": "홍길동"
+  "password": "password1234!"
 }
 ```
 
@@ -311,8 +381,7 @@ Response `200 OK`
         "region": "서울",
         "type": "HOTEL",
         "status": "ACTIVE",
-        "thumbnailUrl": "https://cdn.example.com/img/property_10_thumb.jpg",
-        "roomTypeCount": 3
+        "thumbnailUrl": "https://cdn.example.com/img/property_10_thumb.jpg"
       }
     ],
     "page": 0,
@@ -884,10 +953,6 @@ Query Parameters
 |---------|------|------|
 | region | N | 지역 (서울, 부산, 제주 등) |
 | keyword | N | 숙소명 검색어 |
-| checkIn | N | 체크인 날짜 (yyyy-MM-dd) |
-| checkOut | N | 체크아웃 날짜 (yyyy-MM-dd) |
-| guestCount | N | 투숙 인원 수 |
-| sort | N | 정렬 기준: `PRICE_ASC`, `PRICE_DESC`, `NAME_ASC` (기본: `NAME_ASC`) |
 | page | N | 페이지 번호 (기본 0) |
 | size | N | 페이지 크기 (기본 20) |
 
@@ -1073,7 +1138,7 @@ Response `201 Created`
     "finalPrice": 300000,
     "status": "CONFIRMED",
     "confirmedAt": "2026-03-28T09:15:00",
-    "dailyRateResults": [
+    "dailyRates": [
       { "date": "2026-04-10", "price": 150000 },
       { "date": "2026-04-11", "price": 150000 }
     ]
@@ -1167,7 +1232,7 @@ Response `200 OK`
     "discountAmount": 0,
     "finalPrice": 300000,
     "status": "CONFIRMED",
-    "dailyRateResults": [
+    "dailyRates": [
       { "date": "2026-04-10", "price": 150000 },
       { "date": "2026-04-11", "price": 150000 }
     ],
