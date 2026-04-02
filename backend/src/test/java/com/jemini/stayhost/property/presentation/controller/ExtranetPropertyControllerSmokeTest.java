@@ -2,12 +2,9 @@ package com.jemini.stayhost.property.presentation.controller;
 
 import com.jemini.stayhost.common.response.PageResult;
 import com.jemini.stayhost.property.application.dto.PropertyResult;
-import com.jemini.stayhost.property.application.service.PropertyService;
 import com.jemini.stayhost.support.ControllerTestBase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -19,11 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ExtranetPropertyController.class)
 class ExtranetPropertyControllerSmokeTest extends ControllerTestBase {
-
-    @MockitoBean
-    private PropertyService propertyService;
 
     @Test
     @DisplayName("[Smoke] 인증된 요청 시 PartnerId가 정상 주입된다")
