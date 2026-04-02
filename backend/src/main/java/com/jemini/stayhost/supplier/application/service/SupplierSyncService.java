@@ -58,6 +58,9 @@ public class SupplierSyncService {
     private final ApplicationEventPublisher eventPublisher;
     private final List<SupplierAdapter> adapters;
 
+    /**
+     * 공급사 전체 동기화. 숙소 목록 → 요금/재고 순서로 동기화한다.
+     */
     @Transactional
     public void syncSupplier(final Long supplierId) {
         final Supplier supplier = supplierReader.getById(supplierId);
@@ -65,23 +68,7 @@ public class SupplierSyncService {
         final SupplierSyncJob syncJob = supplierManager.saveSyncJob(SupplierSyncJob.start(supplierId, SyncJobType.FULL_SYNC));
 
         try {
-            final List<SupplierPropertyData> properties = adapter.fetchProperties();
-            int successCount = 0;
-            int failCount = 0;
-
-            for (final SupplierPropertyData data : properties) {
-                try {
-                    syncProperty(supplier.getId(), data);
-                    successCount++;
-                } catch (final Exception e) {
-                    log.warn("공급사 숙소 동기화 실패: supplierId={}, externalId={}", supplierId, data.externalPropertyId(), e);
-                    failCount++;
-                }
-            }
-
-            syncJob.complete(properties.size(), successCount, failCount);
-            supplierManager.saveSyncJob(syncJob);
-
+            syncProperties(syncJob, supplierId, adapter);
             syncRatesAndInventory(supplierId, adapter);
         } catch (final Exception e) {
             log.error("공급사 동기화 실패: supplierId={}", supplierId, e);
@@ -90,13 +77,50 @@ public class SupplierSyncService {
         }
     }
 
+    /** 공급사 코드로 등록된 SupplierAdapter 구현체를 찾는다. */
+    private SupplierAdapter findAdapter(final String supplierCode) {
+        return adapters.stream()
+            .filter(adapter -> adapter.getSupplierCode().equals(supplierCode))
+            .findFirst()
+            .orElseThrow(() -> new BusinessException(ErrorCode.SUPPLIER_ADAPTER_NOT_FOUND));
+    }
+
+    /** 공급사 숙소 목록을 조회하여 개별 upsert 후 SyncJob 결과를 기록한다. */
+    private void syncProperties(final SupplierSyncJob syncJob, final Long supplierId, final SupplierAdapter adapter) {
+        final List<SupplierPropertyData> properties = adapter.fetchProperties();
+        int successCount = 0;
+        int failCount = 0;
+
+        for (final SupplierPropertyData data : properties) {
+            try {
+                upsertSupplierProperty(supplierId, data);
+                successCount++;
+            } catch (final Exception e) {
+                log.warn("공급사 숙소 동기화 실패: supplierId={}, externalId={}", supplierId, data.externalPropertyId(), e);
+                failCount++;
+            }
+        }
+
+        syncJob.complete(properties.size(), successCount, failCount);
+        supplierManager.saveSyncJob(syncJob);
+    }
+
+    /** 공급사 숙소를 저장하거나 기존 데이터를 갱신한다. */
+    private void upsertSupplierProperty(final Long supplierId, final SupplierPropertyData data) {
+        supplierPropertyReader.findBySupplierIdAndExternalPropertyId(supplierId, data.externalPropertyId())
+            .ifPresentOrElse(
+                property -> property.updateRawData(data.rawData()),
+                () -> supplierManager.saveProperty(SupplierProperty.create(supplierId, data.externalPropertyId(), data.rawData()))
+            );
+    }
+
     /**
-     * MAPPED 상태인 공급사 숙소의 요금/재고를 내부 테이블에 동기화한다. 매핑된 내부 숙소의 첫 번째 객실 유형에 요금/재고를 반영한다.
+     * MAPPED 상태인 공급사 숙소의 요금/재고를 내부 테이블에 동기화한다.
+     * 매핑된 내부 숙소의 첫 번째 객실 유형에 요금/재고를 반영한다.
      */
     private void syncRatesAndInventory(final Long supplierId, final SupplierAdapter adapter) {
         final List<SupplierProperty> supplierProperties = supplierPropertyReader.findBySupplierId(supplierId);
-        final List<Long> supplierPropertyIds = supplierProperties.stream().map(SupplierProperty::getId).toList();
-        final List<SupplierPropertyMapping> mappedEntries = supplierMappingReader.findBySupplierPropertyIds(supplierPropertyIds, MappingStatus.MAPPED);
+        final List<SupplierPropertyMapping> mappedEntries = findMappedEntries(supplierProperties);
 
         if (mappedEntries.isEmpty()) {
             log.info("MAPPED 공급사 숙소 없음 — 요금/재고 동기화 건너뜀: supplierId={}", supplierId);
@@ -105,40 +129,57 @@ public class SupplierSyncService {
 
         final Map<Long, SupplierProperty> supplierPropertyMap = supplierProperties.stream()
             .collect(toMap(SupplierProperty::getId, sp -> sp));
-
         final LocalDate from = LocalDate.now();
         final LocalDate to = from.plusDays(RATE_SYNC_DAYS);
 
         for (final SupplierPropertyMapping mapping : mappedEntries) {
-            try {
-                final SupplierProperty sp = supplierPropertyMap.get(mapping.getSupplierPropertyId());
-                syncPropertyRatesAndInventory(adapter, sp.getExternalPropertyId(), mapping.getPropertyId(), from, to);
-            } catch (final Exception e) {
-                log.warn("공급사 요금/재고 동기화 실패: supplierPropertyId={}, propertyId={}", mapping.getSupplierPropertyId(), mapping.getPropertyId(), e);
-            }
+            syncMappedProperty(adapter, mapping, supplierPropertyMap, from, to);
         }
     }
 
-    private void syncPropertyRatesAndInventory(
+    /** MAPPED 상태인 공급사-내부 숙소 매핑 목록을 조회한다. */
+    private List<SupplierPropertyMapping> findMappedEntries(final List<SupplierProperty> supplierProperties) {
+        final List<Long> supplierPropertyIds = supplierProperties.stream()
+            .map(SupplierProperty::getId)
+            .toList();
+        return supplierMappingReader.findBySupplierPropertyIds(supplierPropertyIds, MappingStatus.MAPPED);
+    }
+
+    /** 개별 매핑 숙소의 요금/재고를 동기화한다. 실패 시 로그만 남기고 다음 숙소로 진행한다. */
+    private void syncMappedProperty(
         final SupplierAdapter adapter,
-        final String externalPropertyId,
-        final Long propertyId,
+        final SupplierPropertyMapping mapping,
+        final Map<Long, SupplierProperty> supplierPropertyMap,
         final LocalDate from,
         final LocalDate to
     ) {
+        try {
+            final SupplierProperty sp = supplierPropertyMap.get(mapping.getSupplierPropertyId());
+            final RoomType targetRoomType = findTargetRoomType(mapping.getPropertyId());
+            if (targetRoomType == null) {
+                return;
+            }
+
+            syncRates(adapter, sp.getExternalPropertyId(), targetRoomType, from, to);
+            syncInventory(adapter, sp.getExternalPropertyId(), targetRoomType, from, to);
+
+            log.info("공급사 요금/재고 동기화 완료: externalPropertyId={}, propertyId={}, roomTypeId={}", sp.getExternalPropertyId(), mapping.getPropertyId(), targetRoomType.getId());
+        } catch (final Exception e) {
+            log.warn("공급사 요금/재고 동기화 실패: supplierPropertyId={}, propertyId={}", mapping.getSupplierPropertyId(), mapping.getPropertyId(), e);
+        }
+    }
+
+    /** 내부 숙소의 첫 번째 활성 객실 유형을 반환한다. 없으면 null. */
+    private RoomType findTargetRoomType(final Long propertyId) {
         final List<RoomType> roomTypes = roomTypeReader.findActiveByPropertyId(propertyId);
         if (roomTypes.isEmpty()) {
             log.debug("내부 숙소에 활성 객실 없음 — 건너뜀: propertyId={}", propertyId);
-            return;
+            return null;
         }
-        final RoomType targetRoomType = roomTypes.getFirst();
-
-        syncRates(adapter, externalPropertyId, targetRoomType, from, to);
-        syncInventory(adapter, externalPropertyId, targetRoomType, from, to);
-
-        log.info("공급사 요금/재고 동기화 완료: externalPropertyId={}, propertyId={}, roomTypeId={}", externalPropertyId, propertyId, targetRoomType.getId());
+        return roomTypes.getFirst();
     }
 
+    /** 공급사 요금 데이터를 조회하여 내부 rate 테이블에 upsert한다. */
     private void syncRates(
         final SupplierAdapter adapter,
         final String externalPropertyId,
@@ -147,8 +188,7 @@ public class SupplierSyncService {
         final LocalDate to
     ) {
         final List<SupplierRateData> supplierRates = adapter.fetchRates(externalPropertyId, from, to);
-        final Map<LocalDate, Rate> existingRates = rateReader.findByRoomTypeIdAndDateBetween(roomType.getId(), from, to)
-            .stream()
+        final Map<LocalDate, Rate> existingRates = rateReader.findByRoomTypeIdAndDateBetween(roomType.getId(), from, to).stream()
             .collect(toMap(Rate::getDate, r -> r));
 
         final List<Rate> newRates = new ArrayList<>();
@@ -165,12 +205,13 @@ public class SupplierSyncService {
             rateManager.saveAll(newRates);
         }
 
-        final List<LocalDate> affectedDates = supplierRates.stream().map(SupplierRateData::date).toList();
-        if (!affectedDates.isEmpty()) {
-            eventPublisher.publishEvent(RateUpdatedEvent.create(roomType.getId(), affectedDates));
-        }
+        publishIfNotEmpty(
+            supplierRates.stream().map(SupplierRateData::date).toList(),
+            dates -> eventPublisher.publishEvent(RateUpdatedEvent.create(roomType.getId(), dates))
+        );
     }
 
+    /** 공급사 재고 데이터를 조회하여 내부 inventory 테이블에 upsert한다. */
     private void syncInventory(
         final SupplierAdapter adapter,
         final String externalPropertyId,
@@ -179,8 +220,7 @@ public class SupplierSyncService {
         final LocalDate to
     ) {
         final List<SupplierInventoryData> supplierInventories = adapter.fetchInventory(externalPropertyId, from, to);
-        final Map<LocalDate, Inventory> existingInventories = inventoryReader.findByRoomTypeIdAndDateBetween(roomType.getId(), from, to)
-            .stream()
+        final Map<LocalDate, Inventory> existingInventories = inventoryReader.findByRoomTypeIdAndDateBetween(roomType.getId(), from, to).stream()
             .collect(toMap(Inventory::getDate, i -> i));
 
         final List<Inventory> newInventories = new ArrayList<>();
@@ -197,24 +237,16 @@ public class SupplierSyncService {
             inventoryManager.saveAll(newInventories);
         }
 
-        final List<LocalDate> affectedDates = supplierInventories.stream().map(SupplierInventoryData::date).toList();
-        if (!affectedDates.isEmpty()) {
-            eventPublisher.publishEvent(InventoryChangedEvent.create(roomType.getId(), affectedDates));
+        publishIfNotEmpty(
+            supplierInventories.stream().map(SupplierInventoryData::date).toList(),
+            dates -> eventPublisher.publishEvent(InventoryChangedEvent.create(roomType.getId(), dates))
+        );
+    }
+
+    /** 변경된 날짜가 있을 때만 도메인 이벤트를 발행한다. */
+    private void publishIfNotEmpty(final List<LocalDate> dates, final java.util.function.Consumer<List<LocalDate>> publisher) {
+        if (!dates.isEmpty()) {
+            publisher.accept(dates);
         }
-    }
-
-    private SupplierAdapter findAdapter(final String supplierCode) {
-        return adapters.stream()
-            .filter(adapter -> adapter.getSupplierCode().equals(supplierCode))
-            .findFirst()
-            .orElseThrow(() -> new BusinessException(ErrorCode.SUPPLIER_ADAPTER_NOT_FOUND));
-    }
-
-    private void syncProperty(final Long supplierId, final SupplierPropertyData data) {
-        supplierPropertyReader.findBySupplierIdAndExternalPropertyId(supplierId, data.externalPropertyId())
-            .ifPresentOrElse(
-                property -> property.updateRawData(data.rawData()),
-                () -> supplierManager.saveProperty(SupplierProperty.create(supplierId, data.externalPropertyId(), data.rawData()))
-            );
     }
 }

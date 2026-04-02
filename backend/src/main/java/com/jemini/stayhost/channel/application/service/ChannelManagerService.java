@@ -30,6 +30,8 @@ import java.util.concurrent.Executor;
 @RequiredArgsConstructor
 public class ChannelManagerService {
 
+    private static final String UNMAPPED_ROOM_PREFIX = "UNMAPPED-";
+
     private final ChannelMappingReader channelMappingReader;
     private final ChannelReader channelReader;
     private final ChannelRoomMappingReader channelRoomMappingReader;
@@ -48,17 +50,27 @@ public class ChannelManagerService {
             return;
         }
 
-        final List<CompletableFuture<ChannelSyncResult>> futures = mappings.stream()
-            .map(mapping -> CompletableFuture.supplyAsync(() -> pushInventory(mapping, roomTypeId, affectedDates), channelExecutor))
-            .toList();
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-        futures.stream()
-            .map(CompletableFuture::join)
-            .forEach(result -> logSyncResult(result, propertyId));
+        final List<ChannelSyncResult> results = pushToAllChannels(mappings, roomTypeId, affectedDates);
+        results.forEach(result -> saveSyncLog(result, propertyId));
     }
 
+    /** 모든 매핑 채널에 비동기 병렬 푸시 후 결과를 수집한다. */
+    private List<ChannelSyncResult> pushToAllChannels(
+        final List<ChannelPropertyMapping> mappings,
+        final Long roomTypeId,
+        final List<LocalDate> affectedDates
+    ) {
+        final List<CompletableFuture<ChannelSyncResult>> futures = mappings.stream()
+            .map(mapping -> CompletableFuture.supplyAsync(
+                () -> pushInventory(mapping, roomTypeId, affectedDates), channelExecutor))
+            .toList();
+
+        return futures.stream()
+            .map(CompletableFuture::join)
+            .toList();
+    }
+
+    /** 단일 채널에 재고를 푸시한다. 실패 시 ChannelSyncResult.failure를 반환한다. */
     private ChannelSyncResult pushInventory(
         final ChannelPropertyMapping mapping,
         final Long roomTypeId,
@@ -66,7 +78,7 @@ public class ChannelManagerService {
     ) {
         try {
             final ChannelAdapter adapter = findAdapter(mapping.getChannelId());
-            final List<InventoryUpdate> updates = buildInventoryUpdates(mapping.getId(), roomTypeId, affectedDates);
+            final List<InventoryUpdate> updates = buildInventoryUpdates(mapping, roomTypeId, affectedDates);
             return adapter.pushInventory(mapping, updates);
         } catch (final Exception e) {
             log.warn("채널 재고 푸시 실패: channelId={}, propertyId={}", mapping.getChannelId(), mapping.getPropertyId(), e);
@@ -74,6 +86,7 @@ public class ChannelManagerService {
         }
     }
 
+    /** 채널 ID로 등록된 ChannelAdapter 구현체를 찾는다. */
     private ChannelAdapter findAdapter(final Long channelId) {
         final Channel channel = channelReader.getById(channelId);
 
@@ -83,19 +96,13 @@ public class ChannelManagerService {
             .orElseThrow(() -> new BusinessException(ErrorCode.CHANNEL_ADAPTER_NOT_FOUND));
     }
 
+    /** 채널에 전송할 InventoryUpdate 목록을 구성한다. */
     private List<InventoryUpdate> buildInventoryUpdates(
-        final Long channelPropertyMappingId,
+        final ChannelPropertyMapping mapping,
         final Long roomTypeId,
         final List<LocalDate> dates
     ) {
-        final List<ChannelRoomMapping> roomMappings = channelRoomMappingReader.findByChannelPropertyMappingId(channelPropertyMappingId);
-
-        final String externalRoomId = roomMappings.stream()
-            .filter(rm -> rm.getRoomTypeId().equals(roomTypeId))
-            .map(ChannelRoomMapping::getExternalRoomId)
-            .findFirst()
-            .orElse("UNMAPPED-" + roomTypeId);
-
+        final String externalRoomId = resolveExternalRoomId(mapping.getId(), roomTypeId);
         final List<Inventory> inventories = inventoryReader.findByRoomTypeIdAndDateBetween(roomTypeId, dates.getFirst(), dates.getLast());
 
         return inventories.stream()
@@ -103,7 +110,19 @@ public class ChannelManagerService {
             .toList();
     }
 
-    private void logSyncResult(final ChannelSyncResult result, final Long propertyId) {
+    /** 내부 roomTypeId를 채널 측 외부 객실 ID로 변환한다. 매핑이 없으면 UNMAPPED- 접두사를 붙인다. */
+    private String resolveExternalRoomId(final Long channelPropertyMappingId, final Long roomTypeId) {
+        final List<ChannelRoomMapping> roomMappings = channelRoomMappingReader.findByChannelPropertyMappingId(channelPropertyMappingId);
+
+        return roomMappings.stream()
+            .filter(rm -> rm.getRoomTypeId().equals(roomTypeId))
+            .map(ChannelRoomMapping::getExternalRoomId)
+            .findFirst()
+            .orElse(UNMAPPED_ROOM_PREFIX + roomTypeId);
+    }
+
+    /** 동기화 결과를 로그로 기록하고 ChannelSyncLog를 영속화한다. */
+    private void saveSyncLog(final ChannelSyncResult result, final Long propertyId) {
         log.info("채널 동기화 결과: channel={}, success={}, error={}", result.channelCode(), result.success(), result.errorMessage());
 
         final ChannelSyncLog syncLog = ChannelSyncLog.createOutbound(null, propertyId, ChannelSyncType.INVENTORY);
