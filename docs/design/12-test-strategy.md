@@ -1,169 +1,126 @@
-# 테스트 전략
-
-> 작성일: 2026-03-28
+# 12. 테스트 전략
 
 ---
 
 ## 1. 테스트 환경
 
-- Testcontainers + MySQL: 실제 MySQL InnoDB 환경에서 통합 테스트 실행
-  - H2는 `SELECT FOR UPDATE` 락 동작이 MySQL과 다르므로 사용하지 않는다
-- JUnit 5 + Spring Boot Test: 테스트 프레임워크
-- Mockito: 단위 테스트에서 외부 의존성 격리
+| 도구 | 용도 |
+|------|------|
+| JUnit 5 + Mockito | 단위 테스트 (JVM, 외부 의존성 격리) |
+| SpringBootTest + Testcontainers MySQL | 통합/동시성 테스트 (실제 InnoDB 환경) |
+| k6 | 부하 테스트 (HTTP 레벨) |
+
+H2는 `SELECT FOR UPDATE` 락 동작이 MySQL과 다르므로 사용하지 않는다. 동시성이 핵심인 프로젝트이므로 실제 DB에서 검증한다.
 
 ---
 
 ## 2. 단위 테스트
 
-| 대상 | 테스트 내용 |
-|------|-----------|
-| Entity 생성/상태 변경 | Reservation.create(), Reservation.cancel() 정적 팩토리 메서드 |
-| 요금 계산 | 날짜별 요금 합산, 할인 적용 |
-| 재고 차감/복원 | Inventory.decrease(), Inventory.restore() — 음수 재고/초과 예약 시 예외 (애플리케이션 레벨 검증) |
-| 도메인 검증 | guest_count > max_occupancy 시 예외, 과거 날짜 예약 방지 |
+| 대상 | 테스트 내용 | 파일 |
+|------|-----------|------|
+| 예약 엔티티 | create(), cancel() 정적 팩토리, 상태 전이 | `ReservationTest` |
+| 재고 엔티티 | decrease(), restore(), 음수 재고 예외 | `InventoryTest` |
+| 요금 엔티티 | Rate.create(), 기간 검증 | `RateTest` |
+| 숙소/객실 엔티티 | Property, RoomType 생성 및 상태 변경 | `PropertyTest`, `RoomTypeTest` |
+| 파트너 엔티티 | Partner 생성, 활성화 | `PartnerTest` |
+| 예약 서비스 | 투숙인원 초과, 날짜 검증, 요금 계산 | `ReservationServiceTest` |
+| 숙소/객실/요금/재고 서비스 | CRUD 비즈니스 로직 | `PropertyServiceTest`, `RoomTypeServiceTest`, `RateServiceTest`, `InventoryServiceTest` |
+| 검색 서비스 | Bulk IN 쿼리, basePrice 폴백 | `SearchServiceTest` |
+| 캐시 무효화 | 이벤트별 캐시 evict 검증 | `CacheEvictListenerTest` |
+| JWT 인증 | 토큰 생성/검증, 필터 동작 | `JwtProviderTest`, `JwtAuthenticationFilterTest` |
+| 채널 매니저 | 병렬 푸시, 이벤트 리스너 | `ChannelManagerServiceTest` |
 
 ---
 
-## 3. 동시성 테스트 (핵심)
+## 3. 동시성 테스트 (Testcontainers + MySQL)
 
-### 3.1 테스트 인프라
+`ExecutorService` + `CountDownLatch`로 동시 요청을 시뮬레이션한다.
 
-- Testcontainers + MySQL로 실제 InnoDB 비관적 락 동작 검증
-- `ExecutorService` + `CountDownLatch`로 동시 요청 시뮬레이션
-- `CompletableFuture`로 결과 수집 후 성공/실패 건수와 최종 재고 상태 단언
+### 시나리오
 
-### 3.2 시나리오 A: 극단적 경합 (100:1)
+| 시나리오 | 스레드 | 재고 | 기대 결과 | 검증 포인트 |
+|---------|--------|------|----------|-----------|
+| 재고 1개 동시 예약 (1박) | 50 | 1 | 1건 성공, 49건 실패 | 비관적 락 정합성 |
+| 재고 10개 동시 예약 (1박) | 50 | 10 | 10건 성공, 40건 실패 | 다수 재고 경합 |
+| 멀티 나이트 동시 예약 (3박) | 30 | 5 | 5건 성공, 25건 실패, 데드락 0건 | ORDER BY 기반 락 순서 보장 |
+| 동일 예약 동시 취소 | 20 | - | 1건 성공, 19건 실패 | 취소 멱등성 |
 
-```java
-@Test
-@DisplayName("100개 동시 예약 요청 시 재고 1개이면 정확히 1건만 성공해야 한다")
-void concurrentReservation_100requests_1inventory() throws InterruptedException {
-    // Given: 재고 1개인 객실 (Testcontainers MySQL)
-    int threadCount = 100;
-    int initialInventory = 1;
-    CountDownLatch startLatch = new CountDownLatch(1);
-    CountDownLatch doneLatch = new CountDownLatch(threadCount);
-    AtomicInteger successCount = new AtomicInteger(0);
-    AtomicInteger failCount = new AtomicInteger(0);
-
-    // When: 100개 스레드가 동시에 예약 요청 (startLatch.await()로 동시 출발)
-    ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-    for (int i = 0; i < threadCount; i++) {
-        executor.submit(() -> {
-            try {
-                startLatch.await();
-                reservationService.createReservation(request);
-                successCount.incrementAndGet();
-            } catch (InsufficientInventoryException e) {
-                failCount.incrementAndGet();
-            } finally {
-                doneLatch.countDown();
-            }
-        });
-    }
-    startLatch.countDown(); // 전 스레드 동시 출발
-    doneLatch.await();
-
-    // Then
-    assertThat(successCount.get()).isEqualTo(1);
-    assertThat(failCount.get()).isEqualTo(99);
-
-    Inventory inv = inventoryRepository.findByRoomTypeIdAndDate(roomTypeId, checkInDate);
-    assertThat(inv.getReservedCount()).isEqualTo(1);
-    assertThat(inv.getAvailableCount()).isEqualTo(0); // total - reserved
-}
-```
-
-### 3.3 시나리오 B: 일반 경합 (50:10)
-
-```java
-@Test
-@DisplayName("50개 동시 예약 요청 시 재고 10개이면 정확히 10건만 성공해야 한다")
-void concurrentReservation_50requests_10inventory() throws InterruptedException {
-    // Given: 재고 10개인 객실
-    // When: 50개 스레드 동시 요청
-    // Then: 정확히 10건 CONFIRMED, 40건 FAILED
-    //       inventory.reserved_count == 10
-}
-```
-
-### 3.4 시나리오 C: 멀티 나이트 데드락 검증
-
-```java
-@Test
-@DisplayName("멀티 나이트 동시 예약 시 데드락이 발생하지 않아야 한다")
-void multiNightReservation_noDeadlock() throws InterruptedException {
-    // Given: 객실 A, B 각 재고 5개 / 3박 예약
-    // When: 20개 스레드 동시 요청 (서로 다른 날짜 범위로 겹침)
-    // Then: 데드락 없이 모든 요청이 성공 또는 실패로 완료
-    //       타임아웃(DeadlockLoserDataAccessException) 발생 건수 == 0
-}
-```
-
-### 3.5 시나리오 D: 읽기-쓰기 혼합
-
-```java
-@Test
-@DisplayName("대규모 요금 조회와 동시 예약이 함께 발생해도 정합성이 유지되어야 한다")
-void mixedReadWrite_rateQueryAndReservation() throws InterruptedException {
-    // Given: 요금 조회 스레드 80개 + 예약 스레드 20개 동시 실행
-    // When: 혼합 실행
-    // Then: 예약 결과의 합계 == 재고 차감량
-    //       요금 조회는 모두 정상 응답 (캐시 또는 DB)
-}
-```
+멀티 나이트 테스트는 3박(3개 inventory 행)에 대해 동시 락 획득이 일관된 순서(`ORDER BY roomTypeId, date`)로 이루어져 데드락이 발생하지 않음을 검증한다.
 
 ---
 
-## 4. 통합 테스트
+## 4. 통합 테스트 (E2E)
 
-| 시나리오 | 검증 내용 |
+### Extranet 플로우 (`PartnerPropertyFlowIntegrationTest`)
+
+파트너 등록 → 숙소 등록 → 활성화 → 객실 추가 → 요금 설정 → 재고 설정 → 검색 노출 확인
+
+### Customer 플로우 (`UserReservationFlowIntegrationTest`)
+
+회원가입 → 검색 → 요금 조회 → 예약 생성 → 내 예약 조회 → 예약 취소 → 재고 복원 확인
+
+### 예약 엣지케이스 (`ReservationEdgeCaseIntegrationTest`)
+
+| 시나리오 | 기대 결과 |
 |---------|----------|
-| 예약 생성 → 재고 차감 → 이벤트 발행 | 전체 흐름이 하나의 트랜잭션으로 동작하는지 |
-| 예약 취소 → 재고 복원 | 취소 후 재고가 정확히 복원되는지 |
-| 캐시 무효화 | 숙소 수정 → PropertyUpdatedEvent → Caffeine 캐시 제거 확인 |
-| Supplier 동기화 | 수동 동기화 → property 테이블 저장 → 검색에 노출 |
+| 재고 소진 후 추가 예약 | 400 INVENTORY_INSUFFICIENT |
+| 이중 취소 | 400 RESERVATION_ALREADY_CANCELLED |
+| 타인 예약 접근 | 403 |
+| 타 파트너 숙소 수정 | 403 |
+| 투숙인원 초과 | 400 |
+| 비인증 요청 | 401 |
+| 유효하지 않은 날짜 | 400 |
+| 비활성 숙소 예약 | 404 |
+| 존재하지 않는 예약 | 404 |
+
+### 취소 → 재예약 (`ReservationRebookIntegrationTest`)
+
+예약 생성 → 재고 소진 → 취소 → 재고 복원 → 재예약 성공
+
+### 검색 노출 (`PropertySearchIntegrationTest`)
+
+비활성 숙소 미노출 → 활성화 후 노출 → 객실 포함 확인 → 키워드 검색
 
 ---
 
-## 5. API 테스트 (E2E)
+## 5. 부하 테스트 (k6)
 
-| 시나리오 | 흐름 |
-|---------|------|
-| Extranet 전체 | 파트너 등록 → 숙소 등록 → 객실 추가 → 요금 설정 → 재고 설정 |
-| Customer 전체 | 검색 → 요금 조회 → 예약 → 내 예약 조회 → 취소 |
-| 전체 흐름 | 파트너 등록 → 숙소 등록 → 고객 예약 → 파트너 예약 확인 |
+### 시나리오
 
----
+| 시나리오 | 최대 VUs | 시간 | 파일 |
+|---------|---------|------|------|
+| 검색 전용 (검색 → 상세 → 요금) | 100 | 30s | `search-load.js` |
+| 예약 전용 (쓰기 경합) | 50 | 10s | `reservation-load.js` |
+| 혼합 워크로드 (검색 150 + 상세 80 + 예약 50) | 280 | 80s | `mixed-load.js` |
 
-## 6. 부하 테스트 (k6)
-
-### 6.1 테스트 시나리오
-
-| 시나리오 | VU | Duration | 목적 |
-|---------|-----|----------|------|
-| 대규모 요금 조회 | 100 | 30s | Caffeine 캐시 히트율, P99 응답 시간 |
-| 예약 동시성 | 50 | 10s | 비관적 락 처리량, 재고 정합성 |
-| 혼합 워크로드 | 200 | 60s | 검색 70% + 예약 30% 실제 트래픽 패턴 |
-
-### 6.2 성공 기준
+### Threshold 기준
 
 | 메트릭 | 목표 |
 |--------|------|
-| 검색 P99 응답 시간 | < 500ms |
-| 예약 P99 응답 시간 | < 2s |
-| 에러율 | < 1% (재고 부족 제외) |
-| 재고 정합성 | 최종 reserved_count == 성공 예약 건수 |
+| 검색 p(95) / p(99) | < 300ms / < 500ms |
+| 요금 p(95) / p(99) | < 500ms / < 1000ms |
+| 예약 p(95) / p(99) | < 1000ms / < 2000ms |
+| 에러율 (재고 부족 제외) | > 99% 성공 |
 
-### 6.3 결과 기록
+### 실행 방법
 
-- k6 JSON output → `docs/test/k6-results/`에 저장
-- 주요 메트릭(P50, P95, P99, 에러율)을 표로 정리하여 문서화
+```bash
+bash k6/scripts/seed.sh           # 테스트 데이터 시딩
+k6 run k6/scripts/mixed-load.js   # 혼합 부하 테스트
+```
+
+최신 결과는 [부하 테스트 결과 보고서](../test/k6-load-test-report.md) 참조.
 
 ---
 
-## 7. 테스트 네이밍 규칙
+## 6. 테스트 네이밍 규칙
 
-- 한글 메서드명 사용: `동시_예약_요청_시_재고_초과_방지()`
-- Given-When-Then 구조를 주석으로 명시
+- 한글 메서드명: `재고_1개에_동시_예약시_1명만_성공()`
+- Given-When-Then 구조
 - `@DisplayName`으로 시나리오 설명
+
+| 접미사 | 의미 | 환경 |
+|--------|------|------|
+| `Test` | 단위 테스트 | JVM (Mockito) |
+| `IntegrationTest` | 통합 테스트 | Testcontainers + MySQL |
+| `ConcurrencyTest` | 동시성 테스트 | Testcontainers + MySQL |
