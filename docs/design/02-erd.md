@@ -36,8 +36,8 @@
 
 | 방식 | 구조 | 장점 | 단점 |
 |------|------|------|------|
-| available_count (직접 관리) | 예약 시 `available_count - 1` | 조회 시 컬럼값 그대로 사용 | 취소 시 복원 로직 필요, 초기값 설정 번거로움 |
-| reserved_count (차감 방식, 선택) | 예약 시 `reserved_count + 1` | 가용 수량 = `total_count - reserved_count`로 명확 | 조회 시 계산 필요 |
+| available_count (직접 관리) | 예약 시 available_count - 1 | 조회 시 컬럼값 그대로 사용 | 취소 시 복원 로직 필요, 초기값 설정 번거로움 |
+| reserved_count (차감 방식, 선택) | 예약 시 reserved_count + 1 | 가용 수량 = total_count - reserved_count 로 명확 | 조회 시 계산 필요 |
 
 reserved_count 방식을 선택했다.
 
