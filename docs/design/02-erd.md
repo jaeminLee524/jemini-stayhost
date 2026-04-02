@@ -105,6 +105,15 @@ erDiagram
         DATETIME updated_at
     }
 
+    room_type_image {
+        BIGINT id PK
+        BIGINT room_type_id FK
+        VARCHAR image_url
+        INT sort_order
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
     rate {
         BIGINT id PK
         BIGINT room_type_id FK
@@ -272,6 +281,7 @@ erDiagram
     partner ||--o{ property : "owns"
     property ||--o{ property_image : "has"
     property ||--o{ room_type : "has"
+    room_type ||--o{ room_type_image : "has"
     room_type ||--o{ rate : "has"
     room_type ||--o{ inventory : "has"
     users ||--o{ reservation : "creates"
@@ -328,7 +338,7 @@ erDiagram
 
 숙소 기본 정보를 담는다.
 
-- `region` 컬럼은 검색 필터의 핵심으로, `(region, status)` 복합 인덱스를 통해 검색 쿼리 성능을 보장한다
+- `region` 컬럼은 검색 필터의 핵심으로, `(status, region)` 복합 인덱스를 통해 검색 쿼리 성능을 보장한다. status는 항상 조건에 포함되고 region은 선택적이므로 leftmost prefix rule에 따라 status를 선행 컬럼으로 배치한다
 - `name`에 단독 인덱스를 두어 이름 LIKE 검색도 지원한다
 
 | 컬럼 | 타입 | 제약 | 설명 |
@@ -350,10 +360,9 @@ erDiagram
 | updated_at | DATETIME | NOT NULL | 수정일시 |
 
 인덱스
-- `idx_property_partner (partner_id)` — 파트너별 숙소 목록
-- `idx_property_region_status (region, status)` — 커버링 인덱스: 지역+상태 검색 (검색 쿼리의 핵심)
+- `idx_property_partner_id (partner_id)` — 파트너별 숙소 목록
+- `idx_property_status_region (status, region)` — 복합 인덱스: status 항상 존재 + region 선택적 (leftmost prefix로 status-only도 커버)
 - `idx_property_name (name)` — 숙소명 검색 (LIKE '%키워드%'는 풀스캔이나 prefix 검색 활용)
-- `idx_property_status (status)` — 상태별 조회
 
 #### property_image
 
@@ -370,6 +379,22 @@ erDiagram
 
 인덱스
 - `idx_property_image_property (property_id)` — 숙소별 이미지 목록
+
+#### room_type_image
+
+객실 유형 이미지 목록이다. `sort_order`로 노출 순서를 관리한다. property_image와 동일한 패턴이며, RoomType이 cascade로 생명주기를 소유한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|------|------|------|------|
+| id | BIGINT | PK, AUTO_INCREMENT | 내부 식별자 |
+| room_type_id | BIGINT | NOT NULL, FK → room_type | 소속 객실 유형 |
+| image_url | VARCHAR(500) | NOT NULL | 이미지 URL |
+| sort_order | INT | NOT NULL, DEFAULT 0 | 노출 순서 |
+| created_at | DATETIME | NOT NULL | 생성일시 |
+| updated_at | DATETIME | NOT NULL | 수정일시 |
+
+인덱스
+- `idx_room_type_image_room_type_id (room_type_id)` — 객실 유형별 이미지 목록
 
 #### room_type
 
@@ -394,7 +419,7 @@ erDiagram
 | updated_at | DATETIME | NOT NULL | 수정일시 |
 
 인덱스
-- `idx_room_type_property (property_id)` — 숙소별 객실 유형 목록
+- `idx_room_type_property_status (property_id, status)` — 숙소별 객실 유형 목록 (leftmost prefix로 property_id-only도 커버)
 
 #### rate
 
@@ -503,11 +528,9 @@ erDiagram
 | updated_at | DATETIME | NOT NULL | 수정일시 |
 
 인덱스
-- `idx_reservation_user (user_id)` — 회원별 예약 목록
-- `idx_reservation_property (property_id)` — 숙소별 예약 목록
-- `idx_reservation_status (status)` — 상태별 필터
-- `idx_reservation_number (reservation_number)` — 예약번호 단건 조회
-- `idx_reservation_checkin (check_in_date)` — 날짜별 예약 조회
+- `idx_reservation_user_status (user_id, status)` — 회원별 예약 목록 + 상태 필터 (leftmost prefix로 user_id-only도 커버)
+- `idx_reservation_property_status_checkin (property_id, status, check_in_date)` — 숙소별 예약 목록 + 상태/체크인 필터 (Extranet 예약 관리 쿼리 최적화)
+- `uk_reservation_number (reservation_number)` — 예약번호 단건 조회
 
 #### reservation_daily_rate
 
@@ -566,6 +589,7 @@ erDiagram
 
 인덱스
 - `uk_channel_property (channel_id, property_id)` — UNIQUE KEY
+- `idx_cpm_property_status (property_id, status)` — 숙소별 활성 채널 매핑 조회
 
 #### channel_room_mapping
 
@@ -581,6 +605,9 @@ erDiagram
 | external_room_id | VARCHAR(100) | NOT NULL | 채널 측 객실 ID |
 | created_at | DATETIME | NOT NULL | 생성일시 |
 | updated_at | DATETIME | NOT NULL | 수정일시 |
+
+인덱스
+- `idx_crm_cpm_id (channel_property_mapping_id)` — 숙소 매핑별 객실 목록 조회
 
 #### channel_rate_policy
 
@@ -718,7 +745,7 @@ ORDER BY p.id
 LIMIT :size OFFSET :offset;
 ```
 
-`idx_property_region_status (region, status)` 인덱스는 이 쿼리에서 테이블 풀스캔 없이 인덱스만으로 조건을 평가하는 커버링 인덱스 역할을 한다. 반환된 숙소 ID는 이후 Caffeine 캐시(`property:{id}`)에서 상세 정보를 가져오므로 DB 조회가 최소화된다.
+`idx_property_status_region (status, region)` 인덱스는 이 쿼리에서 테이블 풀스캔 없이 인덱스만으로 조건을 평가하는 커버링 인덱스 역할을 한다. status를 선행 컬럼으로 배치한 이유는, 검색 쿼리에서 `status = 'ACTIVE'`는 항상 포함되지만 region은 선택적이기 때문이다. leftmost prefix rule에 의해 region 없이 status만으로 조회할 때도 인덱스를 활용할 수 있다. 반환된 숙소 ID는 이후 Caffeine 캐시(`property:{id}`)에서 상세 정보를 가져오므로 DB 조회가 최소화된다.
 
 검색 파라미터(지역 x 날짜 x 인원 x 정렬 x 페이지)의 조합 폭발로 인해 검색 결과 자체를 캐시하면 히트율이 극히 낮다. 따라서 검색 결과 캐시는 두지 않고, 하위 단위(property, roomType, rate)별 캐시로 대응하는 전략을 선택했다.
 
@@ -747,6 +774,26 @@ FOR UPDATE;
 ```
 
 `uk_inventory_roomtype_date (room_type_id, date)` UNIQUE KEY로 각 날짜의 행을 정확히 특정한다. `ORDER BY room_type_id, date`로 락 획득 순서를 고정해 데드락을 방지한다.
+
+### 4.4 복합 인덱스 전략 (V5 마이그레이션)
+
+개발 완료 후 실제 쿼리 패턴을 분석하여 단일 컬럼 인덱스를 복합 인덱스로 교체했다. 핵심 원칙은 MySQL의 leftmost prefix rule이다 -- 복합 인덱스 `(A, B)`는 A-only 조회도 커버하므로 별도의 A 단독 인덱스가 불필요하다.
+
+| 테이블 | 교체 전 | 교체 후 | 커버하는 쿼리 |
+|--------|---------|---------|---------------|
+| property | idx(region) + idx(status) | idx(status, region) | searchActive (status 항상, region 선택) |
+| room_type | idx(property_id) | idx(property_id, status) | findByPropertyId, findByPropertyIdAndStatus |
+| reservation | idx(user_id) | idx(user_id, status) | findByUserId, findByUserIdAndStatus |
+| reservation | idx(property_id) + idx(status) + idx(room_type_id) | idx(property_id, status, check_in_date) | findByPropertyIdIn, findByPropertyIdsWithFilters |
+
+idx_reservation_room_type_id는 사용하는 쿼리가 없어 제거했다.
+
+신규 추가 인덱스:
+
+| 테이블 | 인덱스 | 용도 |
+|--------|--------|------|
+| channel_property_mapping | idx(property_id, status) | 숙소별 활성 채널 매핑 조회 |
+| channel_room_mapping | idx(channel_property_mapping_id) | 숙소 매핑별 객실 목록 (FK 인덱스) |
 
 ---
 
@@ -821,6 +868,16 @@ CREATE TABLE room_type (
     created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 수정일시',
     FOREIGN KEY (property_id) REFERENCES property(id)
+);
+
+CREATE TABLE room_type_image (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '이미지 고유 식별자',
+    room_type_id    BIGINT NOT NULL COMMENT '객실 유형 ID (FK)',
+    image_url       VARCHAR(500) NOT NULL COMMENT '이미지 URL',
+    sort_order      INT NOT NULL DEFAULT 0 COMMENT '노출 순서 (0부터 시작, 낮을수록 먼저 표시)',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 수정일시',
+    FOREIGN KEY (room_type_id) REFERENCES room_type(id)
 );
 
 CREATE TABLE rate (

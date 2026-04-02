@@ -122,6 +122,7 @@ class PartnerServiceTest {
         final Partner partner = Partner.create(
             "테스트", "123-45-67890", "홍길동", "010-1234-5678", "test@test.com", "testlogin", "encoded",
             null, null);
+        partner.suspend();
         given(partnerReader.getByLoginId("testlogin")).willReturn(partner);
         given(passwordEncoder.matches("password123", "encoded")).willReturn(true);
 

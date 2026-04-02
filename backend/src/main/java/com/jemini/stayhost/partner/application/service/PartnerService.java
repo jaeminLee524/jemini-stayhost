@@ -27,7 +27,7 @@ public class PartnerService {
     private final JwtProvider jwtProvider;
 
     /**
-     * 파트너 등록. 로그인 아이디/사업자번호 중복 검증 후 PENDING 상태로 생성한다.
+     * 파트너 등록. 로그인 아이디/사업자번호 중복 검증 후 ACTIVE 상태로 생성한다.
      */
     @Transactional
     public PartnerResult register(final PartnerRegisterCommand command) {

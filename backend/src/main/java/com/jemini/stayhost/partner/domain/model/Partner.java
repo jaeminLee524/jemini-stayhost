@@ -69,7 +69,8 @@ public class Partner extends BaseEntity {
         partner.password = encodedPassword;
         partner.bankName = bankName;
         partner.bankAccount = bankAccount;
-        partner.status = PartnerStatus.PENDING;
+        // TODO: 관리자 승인 플로우 도입 시 PENDING으로 변경
+        partner.status = PartnerStatus.ACTIVE;
         return partner;
     }
 

@@ -10,11 +10,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PartnerTest {
 
     @Test
-    @DisplayName("파트너 생성 성공 - PENDING 상태")
-    void 파트너_생성_성공_PENDING_상태() {
+    @DisplayName("파트너 생성 성공 - ACTIVE 상태")
+    void 파트너_생성_성공_ACTIVE_상태() {
         final Partner partner = createPartner();
 
-        assertThat(partner.getStatus()).isEqualTo(PartnerStatus.PENDING);
+        assertThat(partner.getStatus()).isEqualTo(PartnerStatus.ACTIVE);
         assertThat(partner.getBusinessName()).isEqualTo("테스트 숙소");
         assertThat(partner.getLoginId()).isEqualTo("testlogin");
     }
@@ -59,15 +59,6 @@ class PartnerTest {
         partner.activate();
 
         partner.validateActive();
-    }
-
-    @Test
-    @DisplayName("활성상태 검증 - PENDING이면 예외")
-    void 활성상태_검증_PENDING이면_예외() {
-        final Partner partner = createPartner();
-
-        assertThatThrownBy(partner::validateActive)
-            .isInstanceOf(AuthorizationException.class);
     }
 
     @Test

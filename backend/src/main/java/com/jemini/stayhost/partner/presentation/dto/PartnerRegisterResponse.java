@@ -13,7 +13,7 @@ public record PartnerRegisterResponse(
     @Schema(description = "사업자명", example = "㈜스테이호스트")
     String businessName,
 
-    @Schema(description = "상태", example = "PENDING")
+    @Schema(description = "상태", example = "ACTIVE")
     String status
 ) {
 

@@ -16,7 +16,7 @@ public interface ExtranetPartnerDocs {
 
     @Operation(summary = "파트너 등록", description = """
         신규 파트너를 등록한다. 인증 불필요.
-        등록 직후 PENDING 상태이며, 관리자 승인 후 ACTIVE로 전환된다.
+        등록 직후 ACTIVE 상태로 생성된다. (TODO: 관리자 승인 플로우 도입 시 PENDING → ACTIVE 전환으로 변경)
         ``` json
         [ERROR_CODE]
         * DUPLICATE_LOGIN_ID: 이미 사용 중인 로그인 아이디
