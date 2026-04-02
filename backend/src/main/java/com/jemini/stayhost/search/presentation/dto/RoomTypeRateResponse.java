@@ -3,12 +3,17 @@ package com.jemini.stayhost.search.presentation.dto;
 import com.jemini.stayhost.search.application.dto.DailyRateResult;
 import com.jemini.stayhost.search.application.dto.RoomTypeRateEntryResult;
 import com.jemini.stayhost.search.application.dto.RoomTypeRateResult;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import lombok.Builder;
 
 @Builder
+@Schema(description = "객실 유형별 요금 응답")
 public record RoomTypeRateResponse(
+    @Schema(description = "숙소 ID", example = "100")
     Long propertyId,
+
+    @Schema(description = "객실 유형별 요금 목록")
     List<RoomTypeRateEntryResponse> roomTypes
 ) {
 

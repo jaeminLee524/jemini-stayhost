@@ -3,27 +3,53 @@ package com.jemini.stayhost.search.presentation.dto;
 import com.jemini.stayhost.search.application.dto.PropertyDetailResult;
 import com.jemini.stayhost.search.application.dto.PropertyImageEntryResult;
 import com.jemini.stayhost.search.application.dto.RoomTypeEntryResult;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 
 @Builder
+@Schema(description = "숙소 상세 응답")
 public record PropertyDetailResponse(
+    @Schema(description = "숙소 ID", example = "100")
     Long id,
+
+    @Schema(description = "숙소명", example = "스테이호스트 서울 강남점")
     String name,
+
+    @Schema(description = "숙소 유형", example = "HOTEL")
     String type,
+
+    @Schema(description = "숙소 설명")
     String description,
+
+    @Schema(description = "주소")
     String address,
+
+    @Schema(description = "지역", example = "서울")
     String region,
+
+    @Schema(description = "위도", example = "37.4979000")
     BigDecimal latitude,
+
+    @Schema(description = "경도", example = "127.0276000")
     BigDecimal longitude,
+
+    @Schema(description = "체크인 시간", example = "15:00")
     LocalTime checkInTime,
+
+    @Schema(description = "체크아웃 시간", example = "11:00")
     LocalTime checkOutTime,
+
+    @Schema(description = "썸네일 URL")
     String thumbnailUrl,
+
+    @Schema(description = "이미지 목록")
     List<ImageEntryResponse> images,
+
+    @Schema(description = "객실 유형 목록")
     List<RoomTypeEntryResponse> roomTypes
 ) {
 

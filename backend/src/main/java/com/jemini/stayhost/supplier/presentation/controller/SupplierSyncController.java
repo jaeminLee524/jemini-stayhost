@@ -2,6 +2,7 @@ package com.jemini.stayhost.supplier.presentation.controller;
 
 import com.jemini.stayhost.common.response.ApiBaseResponse;
 import com.jemini.stayhost.supplier.application.service.SupplierSyncService;
+import com.jemini.stayhost.supplier.presentation.docs.SupplierSyncDocs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/suppliers")
 @RequiredArgsConstructor
-public class SupplierSyncController {
+public class SupplierSyncController implements SupplierSyncDocs {
 
     private final SupplierSyncService supplierSyncService;
 

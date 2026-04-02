@@ -1435,7 +1435,7 @@ Base Path: `/api/suppliers`
 
 ---
 
-#### POST /api/suppliers/{supplierId}/sync — [DESIGN-ONLY]
+#### POST /api/suppliers/{supplierId}/sync — [BUILD]
 
 수동 동기화 트리거. 배치 잡을 즉시 실행한다.
 
