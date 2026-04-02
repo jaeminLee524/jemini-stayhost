@@ -4,6 +4,7 @@ import com.jemini.stayhost.property.domain.component.RateReader;
 import com.jemini.stayhost.property.domain.model.Rate;
 import com.jemini.stayhost.property.infrastructure.persistence.RateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ public class RateReaderImpl implements RateReader {
 
     private final RateRepository rateRepository;
 
+    @Cacheable(value = "rate", key = "#roomTypeId + ':' + #startDate + ':' + #endDate")
     @Override
     public List<Rate> findByRoomTypeIdAndDateBetween(
         final Long roomTypeId,

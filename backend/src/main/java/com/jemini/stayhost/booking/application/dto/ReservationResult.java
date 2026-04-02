@@ -30,6 +30,7 @@ public record ReservationResult(
     BigDecimal discountAmount,
     BigDecimal finalPrice,
     String status,
+    String source,
     String thumbnailUrl,
     List<DailyRateEntryResult> dailyRates,
     LocalDateTime confirmedAt,
@@ -74,6 +75,7 @@ public record ReservationResult(
             .discountAmount(reservation.getDiscountAmount())
             .finalPrice(reservation.getFinalPrice())
             .status(reservation.getStatus().name())
+            .source(reservation.getSource().name())
             .thumbnailUrl(thumbnailUrl)
             .dailyRates(mapToDailyRates(reservation.getDailyRates()))
             .confirmedAt(reservation.getConfirmedAt())

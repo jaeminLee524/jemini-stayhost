@@ -19,7 +19,8 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         final SimpleCacheManager manager = new SimpleCacheManager();
         manager.setCaches(List.of(
-            buildCache("property", 5_000, 10, TimeUnit.MINUTES),
+            buildCache("search", 1_000, 1, TimeUnit.MINUTES),
+            buildCache("property", 5_000, 30, TimeUnit.MINUTES),
             buildCache("roomTypes", 5_000, 10, TimeUnit.MINUTES),
             buildCache("rate", 30_000, 3, TimeUnit.MINUTES)
         ));

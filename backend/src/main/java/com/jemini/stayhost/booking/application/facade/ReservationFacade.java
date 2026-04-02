@@ -40,7 +40,7 @@ public class ReservationFacade {
         inventoryCache.tryDecreaseAll(command.roomTypeId(), stayDates);
 
         try {
-            return reservationService.createWithInventoryLock(userId, command);
+            return reservationService.createWithExclusiveLock(userId, command);
         } catch (final Exception e) {
             inventoryCache.rollbackAll(command.roomTypeId(), stayDates);
             throw e;

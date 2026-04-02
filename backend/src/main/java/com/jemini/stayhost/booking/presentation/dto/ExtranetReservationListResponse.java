@@ -7,11 +7,10 @@ import lombok.Builder;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Builder
-@Schema(description = "예약 생성 응답")
-public record CreateReservationResponse(
+@Schema(description = "파트너 예약 목록 항목 응답")
+public record ExtranetReservationListResponse(
     @Schema(description = "예약 ID", example = "1")
     Long id,
 
@@ -23,6 +22,9 @@ public record CreateReservationResponse(
 
     @Schema(description = "객실 유형명", example = "스탠다드 더블")
     String roomTypeName,
+
+    @Schema(description = "투숙객 이름", example = "김민준")
+    String guestName,
 
     @Schema(description = "체크인 날짜", example = "2024-07-01")
     LocalDate checkInDate,
@@ -45,29 +47,20 @@ public record CreateReservationResponse(
     @Schema(description = "예약 상태", example = "CONFIRMED")
     String status,
 
-    @Schema(description = "예약 확정 일시")
-    LocalDateTime confirmedAt,
+    @Schema(description = "예약 출처", example = "DIRECT")
+    String source,
 
-    @Schema(description = "날짜별 요금 목록")
-    List<DailyRateEntry> dailyRates
+    @Schema(description = "예약 확정 일시")
+    LocalDateTime confirmedAt
 ) {
 
-    @Builder
-    @Schema(description = "날짜별 요금 항목")
-    public record DailyRateEntry(
-        @Schema(description = "날짜", example = "2024-07-01")
-        LocalDate date,
-
-        @Schema(description = "해당 날짜 요금", example = "100000")
-        BigDecimal price
-    ) {}
-
-    public static CreateReservationResponse from(final ReservationResult result) {
-        return CreateReservationResponse.builder()
+    public static ExtranetReservationListResponse from(final ReservationResult result) {
+        return ExtranetReservationListResponse.builder()
             .id(result.id())
             .reservationNumber(result.reservationNumber())
             .propertyName(result.propertyName())
             .roomTypeName(result.roomTypeName())
+            .guestName(result.guestName())
             .checkInDate(result.checkInDate())
             .checkOutDate(result.checkOutDate())
             .guestCount(result.guestCount())
@@ -75,21 +68,8 @@ public record CreateReservationResponse(
             .discountAmount(result.discountAmount())
             .finalPrice(result.finalPrice())
             .status(result.status())
+            .source(result.source())
             .confirmedAt(result.confirmedAt())
-            .dailyRates(mapToDailyRates(result.dailyRates()))
-            .build();
-    }
-
-    private static List<DailyRateEntry> mapToDailyRates(final List<ReservationResult.DailyRateEntryResult> dailyRates) {
-        return dailyRates.stream()
-            .map(CreateReservationResponse::mapToDailyRate)
-            .toList();
-    }
-
-    private static DailyRateEntry mapToDailyRate(final ReservationResult.DailyRateEntryResult dr) {
-        return DailyRateEntry.builder()
-            .date(dr.date())
-            .price(dr.price())
             .build();
     }
 }

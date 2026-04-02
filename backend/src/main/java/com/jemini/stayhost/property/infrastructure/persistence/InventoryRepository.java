@@ -25,7 +25,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
           AND i.date BETWEEN :checkIn AND :checkOut
         ORDER BY i.roomTypeId, i.date
         """)
-    List<Inventory> findAndLockByRoomTypeIdAndDateRange(
+    List<Inventory> findByRoomTypeIdAndDateRangeForUpdate(
         @Param("roomTypeId") Long roomTypeId,
         @Param("checkIn") LocalDate checkIn,
         @Param("checkOut") LocalDate checkOut

@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -45,7 +46,9 @@ public class SearchService {
     /**
      * 숙소 검색. ACTIVE 상태의 숙소만 반환한다.
      * <p> N+1 방지: 검색 결과의 모든 숙소 객실을 한 번의 IN 쿼리로 일괄 조회한다.
+     * <p> 동일 검색 조건은 1분간 캐시. 숙소/객실 변경 이벤트 시 전체 무효화.
      */
+    @Cacheable(value = "search", key = "{#region, #keyword, #pageable.pageNumber, #pageable.pageSize}")
     @Transactional(readOnly = true)
     public PageResult<PropertySearchResult> searchProperties(
         final String region,
@@ -87,7 +90,7 @@ public class SearchService {
 
         final List<RoomType> roomTypes = roomTypeReader.findActiveByPropertyId(propertyId);
         final List<Long> roomTypeIds = roomTypes.stream().map(RoomType::getId).toList();
-        final Map<Long, List<Rate>> ratesByRoomType = loadRatesByRoomType(roomTypeIds, startDate, endDate);
+        final Map<Long, List<Rate>> ratesByRoomType = loadRatesByRoomType(roomTypes, startDate, endDate);
         final Map<Long, List<Inventory>> inventoryByRoomType = loadInventoryByRoomType(roomTypeIds, startDate, endDate);
 
         return buildRateResult(propertyId, roomTypes, ratesByRoomType, inventoryByRoomType, startDate, endDate);
@@ -100,13 +103,19 @@ public class SearchService {
             .collect(groupingBy(RoomType::getPropertyId));
     }
 
+    /**
+     * roomType별 개별 조회로 분리하여 per-roomType 캐시를 활용한다.
+     */
     private Map<Long, List<Rate>> loadRatesByRoomType(
-        final List<Long> roomTypeIds,
+        final List<RoomType> roomTypes,
         final LocalDate startDate,
         final LocalDate endDate
     ) {
-        return rateReader.findByRoomTypeIdsAndDateBetween(roomTypeIds, startDate, endDate).stream()
-            .collect(groupingBy(Rate::getRoomTypeId));
+        return roomTypes.stream()
+            .collect(toMap(
+                RoomType::getId,
+                rt -> rateReader.findByRoomTypeIdAndDateBetween(rt.getId(), startDate, endDate)
+            ));
     }
 
     private Map<Long, List<Inventory>> loadInventoryByRoomType(

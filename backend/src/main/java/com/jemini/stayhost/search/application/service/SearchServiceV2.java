@@ -9,8 +9,12 @@ import com.jemini.stayhost.common.exception.BusinessException;
 import com.jemini.stayhost.common.exception.ErrorCode;
 import com.jemini.stayhost.common.response.PageResult;
 import com.jemini.stayhost.property.domain.model.*;
+import com.jemini.stayhost.search.application.dto.DailyRateResult;
 import com.jemini.stayhost.search.application.dto.PropertyDetailResult;
+import com.jemini.stayhost.search.application.dto.PropertyImageEntryResult;
 import com.jemini.stayhost.search.application.dto.PropertySearchResult;
+import com.jemini.stayhost.search.application.dto.RoomTypeEntryResult;
+import com.jemini.stayhost.search.application.dto.RoomTypeRateEntryResult;
 import com.jemini.stayhost.search.application.dto.RoomTypeRateResult;
 import com.jemini.stayhost.search.domain.component.InventoryReaderV2;
 import com.jemini.stayhost.search.domain.component.PropertyReaderV2;
@@ -100,23 +104,7 @@ public class SearchServiceV2 {
     }
 
     private PropertySearchResult toSearchResult(final Property property, final List<RoomType> roomTypes) {
-        final BigDecimal minPrice = roomTypes.stream()
-            .map(RoomType::getBasePrice)
-            .min(BigDecimal::compareTo)
-            .orElse(BigDecimal.ZERO);
-
-        return PropertySearchResult.builder()
-            .id(property.getId())
-            .name(property.getName())
-            .type(property.getType().name())
-            .region(property.getRegion())
-            .address(property.getAddress())
-            .thumbnailUrl(property.getThumbnailUrl())
-            .checkInTime(property.getCheckInTime())
-            .checkOutTime(property.getCheckOutTime())
-            .minPrice(minPrice)
-            .availableRoomTypes(roomTypes.size())
-            .build();
+        return PropertySearchResult.from(property, roomTypes);
     }
 
     private PropertyDetailResult buildDetailResult(final Property property, final List<RoomType> roomTypes) {
@@ -137,25 +125,15 @@ public class SearchServiceV2 {
             .build();
     }
 
-    private List<PropertyDetailResult.ImageEntry> toImageEntries(final Property property) {
+    private List<PropertyImageEntryResult> toImageEntries(final Property property) {
         return property.getImages().stream()
-            .map(img -> PropertyDetailResult.ImageEntry.builder()
-                .imageUrl(img.getImageUrl())
-                .sortOrder(img.getSortOrder())
-                .build())
+            .map(PropertyImageEntryResult::from)
             .toList();
     }
 
-    private List<PropertyDetailResult.RoomTypeEntry> toRoomTypeEntries(final List<RoomType> roomTypes) {
+    private List<RoomTypeEntryResult> toRoomTypeEntries(final List<RoomType> roomTypes) {
         return roomTypes.stream()
-            .map(rt -> PropertyDetailResult.RoomTypeEntry.builder()
-                .id(rt.getId())
-                .name(rt.getName())
-                .description(rt.getDescription())
-                .maxOccupancy(rt.getMaxOccupancy())
-                .basePrice(rt.getBasePrice())
-                .amenities(rt.getAmenities())
-                .build())
+            .map(RoomTypeEntryResult::from)
             .toList();
     }
 
@@ -177,7 +155,7 @@ public class SearchServiceV2 {
             final LocalDate startDate,
             final LocalDate endDate
     ) {
-        final List<RoomTypeRateResult.RoomTypeRateEntry> entries = roomTypes.stream()
+        final List<RoomTypeRateEntryResult> entries = roomTypes.stream()
             .map(rt -> buildRoomTypeRateEntry(rt, ratesByRoomType, inventoryByRoomType, startDate, endDate))
             .toList();
 
@@ -187,7 +165,7 @@ public class SearchServiceV2 {
             .build();
     }
 
-    private RoomTypeRateResult.RoomTypeRateEntry buildRoomTypeRateEntry(
+    private RoomTypeRateEntryResult buildRoomTypeRateEntry(
             final RoomType roomType,
             final Map<Long, List<Rate>> ratesByRoomType,
             final Map<Long, List<Inventory>> inventoryByRoomType,
@@ -204,13 +182,13 @@ public class SearchServiceV2 {
             .stream()
             .collect(toMap(Inventory::getDate, i -> i));
 
-        final List<RoomTypeRateResult.DailyRate> dailyRates = startDate.datesUntil(endDate.plusDays(1))
+        final List<DailyRateResult> dailyRates = startDate.datesUntil(endDate.plusDays(1))
             .map(date -> {
                 final BigDecimal price = rateMap.getOrDefault(date, roomType.getBasePrice());
                 final Inventory inv = inventoryMap.get(date);
                 final boolean available = inv != null && inv.getAvailableCount() > 0;
 
-                return RoomTypeRateResult.DailyRate.builder()
+                return DailyRateResult.builder()
                     .date(date)
                     .price(price)
                     .available(available)
@@ -218,7 +196,7 @@ public class SearchServiceV2 {
             })
             .toList();
 
-        return RoomTypeRateResult.RoomTypeRateEntry.builder()
+        return RoomTypeRateEntryResult.builder()
             .id(roomType.getId())
             .name(roomType.getName())
             .maxOccupancy(roomType.getMaxOccupancy())

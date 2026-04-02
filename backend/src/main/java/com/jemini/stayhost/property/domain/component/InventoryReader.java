@@ -11,5 +11,5 @@ public interface InventoryReader {
 
     List<Inventory> findByRoomTypeIdsAndDateBetween(List<Long> roomTypeIds, LocalDate startDate, LocalDate endDate);
 
-    List<Inventory> findAndLockByRoomTypeIdAndDateRange(Long roomTypeId, LocalDate checkIn, LocalDate checkOut);
+    List<Inventory> findByRoomTypeIdAndDateRangeForUpdate(Long roomTypeId, LocalDate checkIn, LocalDate checkOut);
 }

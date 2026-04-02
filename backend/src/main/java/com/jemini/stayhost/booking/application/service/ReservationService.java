@@ -55,7 +55,7 @@ public class ReservationService {
      * <p> TOCTOU 방어: 락 획득 후 객실/재고를 재검증한다.
      */
     @Transactional
-    public ReservationResult createWithInventoryLock(
+    public ReservationResult createWithExclusiveLock(
         final Long userId,
         final CreateReservationCommand command
     ) {
@@ -63,7 +63,7 @@ public class ReservationService {
         final LocalDate lastStayDate = stayDates.getLast();
 
         // 비관적 락으로 재고 행 잠금 (ORDER BY room_type_id, date 보장)
-        final List<Inventory> inventories = inventoryReader.findAndLockByRoomTypeIdAndDateRange(command.roomTypeId(), command.checkInDate(), lastStayDate);
+        final List<Inventory> inventories = inventoryReader.findByRoomTypeIdAndDateRangeForUpdate(command.roomTypeId(), command.checkInDate(), lastStayDate);
 
         // TOCTOU 방어적 재검증(캐시와 DB warm up 시점 불일치로 인한 문제 예방을 위해 재검증)
         final RoomType roomType = roomTypeReader.getById(command.roomTypeId());
@@ -194,7 +194,7 @@ public class ReservationService {
         final Long userId,
         final String cancelReason
     ) {
-        final Reservation reservation = reservationReader.getByIdWithLock(reservationId);
+        final Reservation reservation = reservationReader.getByIdForUpdate(reservationId);
         reservation.validateOwner(userId);
         reservation.cancel(cancelReason);
 

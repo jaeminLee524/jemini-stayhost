@@ -37,11 +37,11 @@ public class InventoryReaderImpl implements InventoryReader {
     }
 
     @Override
-    public List<Inventory> findAndLockByRoomTypeIdAndDateRange(
+    public List<Inventory> findByRoomTypeIdAndDateRangeForUpdate(
             final Long roomTypeId,
             final LocalDate checkIn,
             final LocalDate checkOut
     ) {
-        return inventoryRepository.findAndLockByRoomTypeIdAndDateRange(roomTypeId, checkIn, checkOut);
+        return inventoryRepository.findByRoomTypeIdAndDateRangeForUpdate(roomTypeId, checkIn, checkOut);
     }
 }

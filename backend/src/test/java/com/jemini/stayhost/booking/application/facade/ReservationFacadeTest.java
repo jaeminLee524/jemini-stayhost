@@ -93,7 +93,7 @@ class ReservationFacadeTest {
         final CreateReservationCommand command = createCommand(checkIn, checkOut);
         final List<LocalDate> stayDates = checkIn.datesUntil(checkOut).toList();
 
-        given(reservationService.createWithInventoryLock(eq(USER_ID), eq(command)))
+        given(reservationService.createWithExclusiveLock(eq(USER_ID), eq(command)))
             .willThrow(new BusinessException(ErrorCode.INVENTORY_INSUFFICIENT));
 
         assertThatThrownBy(() -> reservationFacade.createReservation(USER_ID, command))
@@ -109,7 +109,7 @@ class ReservationFacadeTest {
         final LocalDate checkOut = LocalDate.now().plusDays(2);
         final CreateReservationCommand command = createCommand(checkIn, checkOut);
 
-        given(reservationService.createWithInventoryLock(eq(USER_ID), eq(command)))
+        given(reservationService.createWithExclusiveLock(eq(USER_ID), eq(command)))
             .willReturn(org.mockito.Mockito.mock(ReservationResult.class));
 
         reservationFacade.createReservation(USER_ID, command);

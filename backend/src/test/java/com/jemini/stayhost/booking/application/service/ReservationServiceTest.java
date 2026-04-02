@@ -88,7 +88,7 @@ class ReservationServiceTest {
         given(reservationManager.save(any(Reservation.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
 
-        final ReservationResult result = reservationService.createWithInventoryLock(USER_ID, createCommand());
+        final ReservationResult result = reservationService.createWithExclusiveLock(USER_ID, createCommand());
 
         assertThat(result.status()).isEqualTo("CONFIRMED");
         assertThat(result.propertyName()).isEqualTo("테스트 호텔");
@@ -99,14 +99,14 @@ class ReservationServiceTest {
     @Test
     @DisplayName("예약 생성 - 투숙인원 초과이면 예외")
     void 예약_생성_투숙인원_초과이면_예외() {
-        given(inventoryReader.findAndLockByRoomTypeIdAndDateRange(eq(ROOM_TYPE_ID), any(), any()))
+        given(inventoryReader.findByRoomTypeIdAndDateRangeForUpdate(eq(ROOM_TYPE_ID), any(), any()))
             .willReturn(List.of(
                 Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 10),
                 Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), 10)));
         given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(
             RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10));
 
-        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID,
+        assertThatThrownBy(() -> reservationService.createWithExclusiveLock(USER_ID,
             CreateReservationCommand.builder()
                 .propertyId(PROPERTY_ID).roomTypeId(ROOM_TYPE_ID)
                 .checkInDate(LocalDate.of(2026, 4, 10)).checkOutDate(LocalDate.of(2026, 4, 12))
@@ -118,7 +118,7 @@ class ReservationServiceTest {
     @Test
     @DisplayName("예약 생성 - 체크아웃이 체크인 이전이면 예외")
     void 예약_생성_체크아웃이_체크인_이전이면_예외() {
-        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID,
+        assertThatThrownBy(() -> reservationService.createWithExclusiveLock(USER_ID,
             CreateReservationCommand.builder()
                 .propertyId(PROPERTY_ID).roomTypeId(ROOM_TYPE_ID)
                 .checkInDate(LocalDate.of(2026, 4, 12)).checkOutDate(LocalDate.of(2026, 4, 10))
@@ -130,12 +130,12 @@ class ReservationServiceTest {
     @Test
     @DisplayName("예약 생성 - 재고 정보 없으면 예외")
     void 예약_생성_재고_정보_없으면_예외() {
-        given(inventoryReader.findAndLockByRoomTypeIdAndDateRange(eq(ROOM_TYPE_ID), any(), any()))
+        given(inventoryReader.findByRoomTypeIdAndDateRangeForUpdate(eq(ROOM_TYPE_ID), any(), any()))
             .willReturn(List.of());
         given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(
             RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10));
 
-        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID, createCommand()))
+        assertThatThrownBy(() -> reservationService.createWithExclusiveLock(USER_ID, createCommand()))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVENTORY_INSUFFICIENT);
     }
@@ -147,7 +147,7 @@ class ReservationServiceTest {
         given(roomTypeReader.getById(ROOM_TYPE_ID)).willReturn(
             RoomType.create(PROPERTY_ID, "스탠다드", "설명", 2, BigDecimal.valueOf(120000), null, 10));
 
-        assertThatThrownBy(() -> reservationService.createWithInventoryLock(USER_ID, createCommand()))
+        assertThatThrownBy(() -> reservationService.createWithExclusiveLock(USER_ID, createCommand()))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVENTORY_INSUFFICIENT);
     }
@@ -162,7 +162,7 @@ class ReservationServiceTest {
         given(reservationManager.save(any(Reservation.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
 
-        final ReservationResult result = reservationService.createWithInventoryLock(USER_ID, createCommand());
+        final ReservationResult result = reservationService.createWithExclusiveLock(USER_ID, createCommand());
 
         // 4/10: 150000 (특가), 4/11: 120000 (basePrice) = 270000
         assertThat(result.finalPrice()).isEqualByComparingTo(BigDecimal.valueOf(270000));
@@ -239,7 +239,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 성공")
     void 예약_취소_성공() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
         setupInventoriesForCancel();
 
         final CancelReservationResult result = reservationService.cancelReservation(
@@ -254,7 +254,7 @@ class ReservationServiceTest {
     void 예약_취소_이미_취소된_예약이면_예외() {
         final Reservation reservation = createConfirmedReservation();
         reservation.cancel("최초 취소");
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, USER_ID, "재취소"))
@@ -266,7 +266,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 - 본인 예약이 아니면 예외")
     void 예약_취소_본인_예약이_아니면_예외() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, 999L, "취소"))
@@ -277,7 +277,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 시 재고 복원 확인")
     void 예약_취소_시_재고_복원_확인() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
         final Inventory inv1 = Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), 10);
         final Inventory inv2 = Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), 10);
         inv1.decreaseStock();
@@ -296,7 +296,7 @@ class ReservationServiceTest {
     void 예약_취소_실패_시_재고_복원_호출되지_않는다() {
         final Reservation reservation = createConfirmedReservation();
         reservation.cancel("최초 취소");
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
 
         assertThatThrownBy(() -> reservationService.cancelReservation(
             RESERVATION_ID, USER_ID, "재취소"))
@@ -310,7 +310,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 성공 시 캐시 재고가 복원된다")
     void 예약_취소_성공_시_캐시_재고가_복원된다() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
         setupInventoriesForCancel();
 
         reservationService.cancelReservation(RESERVATION_ID, USER_ID, "취소");
@@ -322,7 +322,7 @@ class ReservationServiceTest {
     @DisplayName("예약 취소 성공 시 이벤트가 발행된다")
     void 예약_취소_성공_시_이벤트가_발행된다() {
         final Reservation reservation = createConfirmedReservation();
-        given(reservationReader.getByIdWithLock(RESERVATION_ID)).willReturn(reservation);
+        given(reservationReader.getByIdForUpdate(RESERVATION_ID)).willReturn(reservation);
         setupInventoriesForCancel();
 
         reservationService.cancelReservation(RESERVATION_ID, USER_ID, "취소");
@@ -354,7 +354,7 @@ class ReservationServiceTest {
     }
 
     private void setupInventories(final int totalCount) {
-        given(inventoryReader.findAndLockByRoomTypeIdAndDateRange(eq(ROOM_TYPE_ID), any(), any()))
+        given(inventoryReader.findByRoomTypeIdAndDateRangeForUpdate(eq(ROOM_TYPE_ID), any(), any()))
             .willReturn(List.of(
                 Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 10), totalCount),
                 Inventory.create(ROOM_TYPE_ID, LocalDate.of(2026, 4, 11), totalCount)));

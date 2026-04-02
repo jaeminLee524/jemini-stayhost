@@ -11,6 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class ReservationReaderImpl implements ReservationReader {
@@ -24,8 +27,8 @@ public class ReservationReaderImpl implements ReservationReader {
     }
 
     @Override
-    public Reservation getByIdWithLock(final Long id) {
-        return reservationRepository.findByIdWithLock(id)
+    public Reservation getByIdForUpdate(final Long id) {
+        return reservationRepository.findByIdForUpdate(id)
             .orElseThrow(() -> new NotFoundException(ErrorCode.RESERVATION_NOT_FOUND));
     }
 
@@ -41,5 +44,24 @@ public class ReservationReaderImpl implements ReservationReader {
         final Pageable pageable
     ) {
         return reservationRepository.findByUserIdAndStatus(userId, ReservationStatus.valueOf(status), pageable);
+    }
+
+    @Override
+    public Page<Reservation> findByPropertyIds(final List<Long> propertyIds, final Pageable pageable) {
+        return reservationRepository.findByPropertyIdIn(propertyIds, pageable);
+    }
+
+    @Override
+    public Page<Reservation> findByPropertyIdsWithFilters(
+        final List<Long> propertyIds,
+        final Long propertyId,
+        final String status,
+        final LocalDate checkInFrom,
+        final LocalDate checkInTo,
+        final Pageable pageable
+    ) {
+        final ReservationStatus reservationStatus = status != null ? ReservationStatus.valueOf(status) : null;
+        return reservationRepository.findByPropertyIdsWithFilters(
+            propertyIds, propertyId, reservationStatus, checkInFrom, checkInTo, pageable);
     }
 }
