@@ -46,7 +46,7 @@ graph TD
 - 사업자 등록번호, 대표자명, 정산 계좌 같은 법적·재무적 정보를 가진다.
 
 ### Property Context — 숙소·객실·요금·재고
-- OTA의 핵심 상품 영역이다. 숙소(Property), 객실 유형(RoomType), 날짜별 요금(Rate), 날짜별 재고(Inventory)를 포함한다.
+- OTA의 핵심 상품 영역이다. 숙소(Property), 객실 유형(RoomType), 날짜별 요금(Rate), 날짜별 재고(Inventory)를 포함한다. 숙소 이미지(PropertyImage)와 객실 유형 이미지(RoomTypeImage)는 각각 부모 엔티티가 cascade로 생명주기를 소유한다.
 - 이 네 엔티티는 강하게 응집되어 있으며 함께 생성되고 함께 조회된다.
 - 재고(Inventory)가 Property Context에 속하는 이유는, 재고의 생성 주체가 파트너(Extranet)이기 때문이다.
 - 예약이 발생하면 Booking Context가 Property Context의 재고를 차감하는 방식으로 협력한다.

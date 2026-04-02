@@ -27,7 +27,7 @@ OTA(Online Travel Agency) 숙박 플랫폼의 백엔드 시스템 설계 및 구
 | Docker | 27+ | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
 | k6 | 0.57+ | `brew install k6` |
 
-JDK, Gradle은 Docker 빌드 내에서 처리되므로 별도 설치가 필요 없다.
+JDK, Gradle은 Docker 빌드 내에서 처리되므로 서버 기동에는 별도 설치가 필요 없다. 로컬 테스트 실행 시에는 JDK 21이 필요하다 (3단계 참고).
 
 ### 1단계: 서버 기동
 
@@ -83,7 +83,24 @@ curl -X POST http://localhost:8080/api/public/users/login \
 
 응답의 `data.accessToken` 값을 Swagger UI 상단 Authorize 버튼에 `Bearer {토큰}` 형식으로 입력한다.
 
-### 3단계: k6 부하 테스트
+### 3단계: 테스트 실행
+
+로컬에서 테스트를 실행하려면 JDK 21이 필요하다.
+
+| 도구 | 버전 | 설치 (macOS) |
+|------|------|-------------|
+| JDK | 21+ | `brew install openjdk@21` |
+
+```bash
+cd backend
+
+# 단위 테스트 + 통합 테스트 실행 (Testcontainers가 MySQL 컨테이너를 자동 생성)
+./gradlew test
+```
+
+통합 테스트는 Testcontainers를 사용하므로 Docker가 실행 중이어야 한다.
+
+### 4단계: k6 부하 테스트
 
 ```bash
 # 1. k6 테스트 데이터 시딩 (숙소 5개, 객실 25개, 요금/재고 30일)

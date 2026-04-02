@@ -17,7 +17,7 @@ PARTNER_PASSWORD="password1234"
 BIZ_NUMBER="$(date +%s)"
 
 echo "[1/8] 파트너 등록: ${PARTNER_LOGIN}"
-PARTNER_RES=$(curl -s -X POST "${BASE_URL}/api/extranet/partners" \
+PARTNER_RES=$(curl -s -X POST "${BASE_URL}/api/public/extranet/partners" \
   -H "Content-Type: application/json" \
   -d "{
     \"businessName\": \"k6 테스트 업체\",

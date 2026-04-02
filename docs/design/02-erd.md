@@ -355,7 +355,7 @@ erDiagram
 | check_in_time | TIME | - | 체크인 시간 |
 | check_out_time | TIME | - | 체크아웃 시간 |
 | thumbnail_url | VARCHAR(500) | - | 대표 이미지 URL |
-| status | VARCHAR(20) | NOT NULL, DEFAULT 'DRAFT' | DRAFT / ACTIVE / INACTIVE |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'INACTIVE' | ACTIVE / INACTIVE |
 | created_at | DATETIME | NOT NULL | 생성일시 |
 | updated_at | DATETIME | NOT NULL | 수정일시 |
 
@@ -484,7 +484,7 @@ erDiagram
 | password | VARCHAR(255) | NOT NULL | BCrypt 해시 |
 | name | VARCHAR(100) | NOT NULL | 이름 |
 | phone | VARCHAR(20) | - | 전화번호 |
-| status | VARCHAR(20) | NOT NULL, DEFAULT 'ACTIVE' | 계정 상태 |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'ACTIVE' | ACTIVE / INACTIVE |
 | created_at | DATETIME | NOT NULL | 생성일시 |
 | updated_at | DATETIME | NOT NULL | 수정일시 |
 
@@ -519,8 +519,8 @@ erDiagram
 | base_price | DECIMAL(12,2) | NOT NULL | 일별 요금 합산 |
 | discount_amount | DECIMAL(12,2) | NOT NULL, DEFAULT 0 | 할인 총액 |
 | final_price | DECIMAL(12,2) | NOT NULL | 최종 금액 (base_price - discount_amount) |
-| status | VARCHAR(20) | NOT NULL, DEFAULT 'CONFIRMED' | CONFIRMED / CANCELLED / FAILED |
-| source | VARCHAR(20) | NOT NULL, DEFAULT 'DIRECT' | DIRECT / CHANNEL:{channelName} |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'CONFIRMED' | CONFIRMED / CANCELLED |
+| source | VARCHAR(30) | NOT NULL, DEFAULT 'DIRECT' | DIRECT / CHANNEL / SUPPLIER |
 | cancelled_at | DATETIME | - | 취소 일시 |
 | cancel_reason | VARCHAR(500) | - | 취소 사유 |
 | confirmed_at | DATETIME | - | 확정 일시 |
@@ -832,14 +832,14 @@ CREATE TABLE property (
     name            VARCHAR(200) NOT NULL COMMENT '숙소명',
     type            VARCHAR(30) NOT NULL COMMENT '숙소 유형 — HOTEL, MOTEL, PENSION, RESORT, GUESTHOUSE',
     description     TEXT COMMENT '숙소 상세 설명 (HTML 또는 텍스트)',
-    address         VARCHAR(500) NOT NULL COMMENT '전체 주소',
+    address         VARCHAR(500) COMMENT '전체 주소',
     region          VARCHAR(100) NOT NULL COMMENT '지역 분류 (서울, 부산, 제주 등 — 검색 필터 핵심)',
     latitude        DECIMAL(10,7) COMMENT '위도 (지도 표시용)',
     longitude       DECIMAL(10,7) COMMENT '경도 (지도 표시용)',
-    check_in_time   TIME NOT NULL DEFAULT '15:00:00' COMMENT '체크인 가능 시간 (기본 15:00)',
-    check_out_time  TIME NOT NULL DEFAULT '11:00:00' COMMENT '체크아웃 시간 (기본 11:00)',
+    check_in_time   TIME COMMENT '체크인 가능 시간',
+    check_out_time  TIME COMMENT '체크아웃 시간',
     thumbnail_url   VARCHAR(500) COMMENT '대표 이미지 URL (검색 결과 노출용)',
-    status          VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT '숙소 상태 — DRAFT(작성중), ACTIVE(공개), INACTIVE(비공개)',
+    status          VARCHAR(20) NOT NULL DEFAULT 'INACTIVE' COMMENT '숙소 상태 — ACTIVE(공개), INACTIVE(비공개)',
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 수정일시',
     FOREIGN KEY (partner_id) REFERENCES partner(id)
@@ -907,13 +907,13 @@ CREATE TABLE inventory (
 -- Customer Context
 -- =============================================
 
-CREATE TABLE user (
+CREATE TABLE users (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '회원 고유 식별자',
     email       VARCHAR(200) NOT NULL UNIQUE COMMENT '이메일 (로그인 ID, 플랫폼 전체 유일)',
     password    VARCHAR(255) NOT NULL COMMENT 'BCrypt 해시 비밀번호',
     name        VARCHAR(100) NOT NULL COMMENT '회원명',
     phone       VARCHAR(20) COMMENT '연락처',
-    status      VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT '계정 상태 — ACTIVE(활성), SUSPENDED(정지)',
+    status      VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT '계정 상태 — ACTIVE(활성), INACTIVE(탈퇴)',
     created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 수정일시'
 );
@@ -936,14 +936,14 @@ CREATE TABLE reservation (
     base_price          DECIMAL(12,2) NOT NULL COMMENT '일별 요금 합산 (reservation_daily_rate의 price 총합)',
     discount_amount     DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '할인 총액 (쿠폰/프로모션 등, 기본 0)',
     final_price         DECIMAL(12,2) NOT NULL COMMENT '최종 결제 금액 (base_price - discount_amount)',
-    status              VARCHAR(20) NOT NULL DEFAULT 'CONFIRMED' COMMENT '예약 상태 — CONFIRMED(확정), CANCELLED(취소), FAILED(실패)',
-    source              VARCHAR(30) NOT NULL DEFAULT 'DIRECT' COMMENT '예약 출처 — DIRECT(자사 직접 예약), CHANNEL:BOOKING(Booking.com 경유) 등',
+    status              VARCHAR(20) NOT NULL DEFAULT 'CONFIRMED' COMMENT '예약 상태 — CONFIRMED(확정), CANCELLED(취소)',
+    source              VARCHAR(30) NOT NULL DEFAULT 'DIRECT' COMMENT '예약 출처 — DIRECT(자사 직접 예약), CHANNEL(채널 경유), SUPPLIER(공급자 경유)',
     cancelled_at        DATETIME COMMENT '취소 처리 일시 (취소되지 않은 경우 NULL)',
     cancel_reason       VARCHAR(500) COMMENT '취소 사유',
     confirmed_at        DATETIME COMMENT '확정 처리 일시 (자동 확정 시 예약 생성과 동시)',
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 수정일시',
-    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (property_id) REFERENCES property(id),
     FOREIGN KEY (room_type_id) REFERENCES room_type(id)
 );
